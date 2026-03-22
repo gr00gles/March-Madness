@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>March Madness O/U Tracker</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --card-hover: #222633;
+  --border: #2a2e3d;
+  --text: #e4e4e7;
+  --text-muted: #8b8d97;
+  --accent: #f97316;
+  --over: #22c55e;
+  --under: #ef4444;
+  --push: #eab308;
+  --live: #ef4444;
+  --input-bg: #13151d;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #fb923c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-section input {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  width: 130px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.toggle-group {
+  display: flex;
+  background: var(--input-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.toggle-btn {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-nav button {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.date-nav button:hover { border-color: var(--accent); }
+
+.date-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 110px;
+  text-align: center;
+}
+
+.action-btns {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sm:hover { border-color: var(--accent); color: var(--text); }
+
+.refresh-info {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#refreshTicker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.75rem;
+}
+
+.ticker-bounce {
+  display: inline-block;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+  60% { transform: translateY(-2px); }
+}
+
+.ticker-bar {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.ticker-pip {
+  width: 4px;
+  height: 10px;
+  border-radius: 1px;
+  background: var(--border);
+  transition: background 0.3s, height 0.3s;
+}
+
+.ticker-pip.active {
+  background: var(--accent);
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--live);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.main { padding: 16px 20px; max-width: 900px; margin: 0 auto; }
+
+/* Summary Dashboard */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.stat-value.over { color: var(--over); }
+.stat-value.under { color: var(--under); }
+.stat-value.push { color: var(--push); }
+
+/* Game Cards */
+.game-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.game-card:hover { border-color: #3a3e4d; }
+
+.game-card.live { border-left: 3px solid var(--live); }
+.game-card.final { border-left: 3px solid var(--text-muted); }
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.game-header:hover { background: var(--card-hover); }
+
+.game-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.team-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.team-seed {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  min-width: 16px;
+}
+
+.team-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.team-name.winner { color: var(--over); }
+
+.team-score {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-left: auto;
+  min-width: 28px;
+  text-align: right;
+}
+
+.game-meta {
+  text-align: right;
+  min-width: 80px;
+}
+
+.game-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.game-status.live { color: var(--live); }
+.game-status.pre { color: var(--text-muted); }
+.game-status.final { color: var(--text-muted); }
+
+.game-round {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.game-broadcast {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.expand-icon {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.game-card.expanded .expand-icon { transform: rotate(180deg); }
+
+/* O/U Tracker Table */
+.ou-section {
+  padding: 12px 14px;
+  display: none;
+}
+
+.game-card.expanded .ou-section { display: block; }
+
+.ou-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.ou-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ou-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ou-table tr:last-child td { border-bottom: none; }
+
+.ou-table .period-label { font-weight: 600; color: var(--text-muted); }
+
+.ou-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  width: 70px;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.ou-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.diff-value {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.diff-value.over { color: var(--over); }
+.diff-value.under { color: var(--under); }
+.diff-value.push { color: var(--push); }
+
+.result-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.result-badge.over { background: rgba(34,197,94,0.15); color: var(--over); }
+.result-badge.under { background: rgba(239,68,68,0.15); color: var(--under); }
+.result-badge.push { background: rgba(234,179,8,0.15); color: var(--push); }
+.result-badge.pending { background: rgba(139,141,151,0.1); color: var(--text-muted); }
+
+.side-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--input-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.side-btn {
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.side-btn:hover { color: var(--text); }
+.side-btn.active-over { background: var(--over); color: #fff; }
+.side-btn.active-under { background: var(--under); color: #fff; }
+
+.result-badge.win { background: rgba(34,197,94,0.15); color: var(--over); }
+.result-badge.loss { background: rgba(239,68,68,0.15); color: var(--under); }
+
+/* Live Tracker View */
+.tracker-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tracker-summary .stat-card { padding: 10px; }
+.tracker-summary .stat-value { font-size: 1.2rem; }
+
+.tracker-game {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.tracker-game.has-live { border-color: var(--live); }
+
+.tracker-game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-hover);
+}
+
+.tracker-matchup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.tracker-matchup img { width: 16px; height: 16px; border-radius: 3px; }
+
+.tracker-score {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tracker-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.tracker-status.live { color: var(--live); }
+.tracker-status.final { color: var(--text-muted); }
+.tracker-status.pre { color: var(--text-muted); }
+
+.tracker-bets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.tracker-bet {
+  padding: 8px 10px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+.tracker-bet:last-child { border-right: none; }
+
+.tracker-bet-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.tracker-bet-side {
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.tracker-bet-side.over { color: var(--over); }
+.tracker-bet-side.under { color: var(--under); }
+
+.tracker-bet-line {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.tracker-bet-actual {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.tracker-bet-diff {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.tracker-token {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+
+.tracker-token.win { background: rgba(34,197,94,0.2); color: var(--over); }
+.tracker-token.loss { background: rgba(239,68,68,0.2); color: var(--under); }
+.tracker-token.push { background: rgba(234,179,8,0.2); color: var(--push); }
+.tracker-token.live { background: rgba(239,68,68,0.15); color: var(--live); }
+.tracker-token.pending { background: rgba(139,141,151,0.1); color: var(--text-muted); }
+
+.tracker-no-bet {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.tracker-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.tracker-controls .date-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.tracker-controls .date-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tracker-date-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.vegas-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.no-games {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.no-games h3 { margin-bottom: 8px; color: var(--text); }
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  display: none;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal h3 { margin-bottom: 12px; }
+
+.modal textarea {
+  width: 100%;
+  height: 200px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.modal-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* All Games view */
+.view-toggle { margin-bottom: 16px; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .header-top { flex-direction: column; align-items: flex-start; }
+  .controls { flex-direction: column; align-items: flex-start; }
+  .action-btns { margin-left: 0; width: 100%; justify-content: flex-start; }
+  .summary { grid-template-columns: repeat(2, 1fr); }
+  .ou-input { width: 60px; }
+  .date-label { min-width: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>March Madness O/U Tracker</h1>
+    <div class="user-section">
+      <input type="text" id="userName" placeholder="Your name" />
+    </div>
+  </div>
+  <div class="controls">
+    <div class="toggle-group" id="mainTabs">
+      <button class="toggle-btn active" data-value="input">Input</button>
+      <button class="toggle-btn" data-value="tracker">Bet Tracker</button>
+    </div>
+    <div class="toggle-group" id="genderToggle">
+      <button class="toggle-btn active" data-value="mens">Men's</button>
+      <button class="toggle-btn" data-value="womens">Women's</button>
+      <button class="toggle-btn" data-value="both">Both</button>
+    </div>
+    <div class="toggle-group" id="dateMode">
+      <button class="toggle-btn active" data-value="single">Date</button>
+      <button class="toggle-btn" data-value="range">Range</button>
+      <button class="toggle-btn" data-value="all">All Dates</button>
+    </div>
+    <div class="date-nav" id="dateNav">
+      <button id="prevDay">&larr;</button>
+      <span class="date-label" id="dateLabel"></span>
+      <button id="nextDay">&rarr;</button>
+    </div>
+    <div id="dateEndPicker" style="display:none">
+      <span class="tracker-date-label">to</span>
+      <input type="date" class="date-input" id="endDateInput" />
+    </div>
+    <div class="action-btns">
+      <button class="btn-sm" id="expandAll">Expand All</button>
+      <button class="btn-sm" id="exportBtn">Export</button>
+      <button class="btn-sm" id="importBtn">Import</button>
+    </div>
+    <div class="refresh-info">
+      <span id="liveDot" class="live-dot" style="display:none"></span>
+      <span id="refreshTicker">🏀<span id="tickerDots"></span></span>
+      <span id="refreshInfo">Loading...</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="summary" id="summary"></div>
+  <div id="gamesList"></div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h3>Export Your Picks</h3>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Copy this JSON and share it with friends so they can import your picks.</p>
+    <textarea id="exportData" readonly></textarea>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('exportModal')">Close</button>
+      <button class="btn btn-primary" onclick="copyExport()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h3>Import Picks</h3>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Paste a friend's exported JSON to view their picks alongside yours.</p>
+    <textarea id="importData" placeholder="Paste JSON here..."></textarea>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('importModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="doImport()">Import</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- State ---
+let currentTab = 'input'; // 'input' or 'tracker'
+let currentGender = 'mens'; // 'mens', 'womens', 'both'
+let currentDateMode = 'single'; // 'single', 'range', 'all'
+let currentDate = new Date();
+let endDate = new Date();
+let gamesData = {};
+let refreshTimer = null;
+let allExpanded = false;
+let allGamesCache = {};
+
+const TOURNAMENT_START = new Date('2026-03-17');
+const TOURNAMENT_END = new Date('2026-04-07');
+
+// For the current year's tournament, we check multiple date ranges
+const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/basketball';
+
+// --- localStorage ---
+function getUserName() {
+  return localStorage.getItem('mm_username') || '';
+}
+
+function setUserName(name) {
+  localStorage.setItem('mm_username', name);
+}
+
+function getPicksKey() {
+  return `mm_picks_${getUserName() || 'default'}`;
+}
+
+function loadPicks() {
+  try {
+    return JSON.parse(localStorage.getItem(getPicksKey()) || '{}');
+  } catch { return {}; }
+}
+
+function savePicks(picks) {
+  localStorage.setItem(getPicksKey(), JSON.stringify(picks));
+}
+
+function savePick(gameId, period, value) {
+  const picks = loadPicks();
+  if (!picks[gameId]) picks[gameId] = {};
+  if (value === '' || value === null) {
+    delete picks[gameId][period];
+  } else {
+    picks[gameId][period] = parseFloat(value);
+  }
+  savePicks(picks);
+}
+
+function saveSide(gameId, period, side) {
+  const picks = loadPicks();
+  if (!picks[gameId]) picks[gameId] = {};
+  const sideKey = period + '_side';
+  if (!side) {
+    delete picks[gameId][sideKey];
+  } else {
+    picks[gameId][sideKey] = side;
+  }
+  savePicks(picks);
+}
+
+function getPick(gameId, period) {
+  const picks = loadPicks();
+  return picks[gameId]?.[period] ?? '';
+}
+
+function getSide(gameId, period) {
+  const picks = loadPicks();
+  return picks[gameId]?.[period + '_side'] ?? '';
+}
+
+// --- ESPN API ---
+function formatDateParam(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
+function formatDateDisplay(date) {
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+async function fetchGames(gender, date) {
+  const sport = gender === 'mens' ? 'mens-college-basketball' : 'womens-college-basketball';
+  const dateStr = formatDateParam(date);
+  const url = `${ESPN_BASE}/${sport}/scoreboard?groups=100&dates=${dateStr}`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return (data.events || []).map(parseEvent);
+  } catch (e) {
+    console.error('Failed to fetch games:', e);
+    return [];
+  }
+}
+
+async function fetchAllGames(gender) {
+  const cacheKey = gender;
+  const sport = gender === 'mens' ? 'mens-college-basketball' : 'womens-college-basketball';
+
+  // Fetch across tournament date range
+  const dates = [];
+  const d = new Date(TOURNAMENT_START);
+  while (d <= TOURNAMENT_END) {
+    dates.push(formatDateParam(new Date(d)));
+    d.setDate(d.getDate() + 1);
+  }
+
+  // Batch fetch in groups of 5
+  const allGames = [];
+  for (let i = 0; i < dates.length; i += 5) {
+    const batch = dates.slice(i, i + 5);
+    const results = await Promise.all(
+      batch.map(async dateStr => {
+        const url = `${ESPN_BASE}/${sport}/scoreboard?groups=100&dates=${dateStr}`;
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) return [];
+          const data = await resp.json();
+          return (data.events || []).map(parseEvent);
+        } catch { return []; }
+      })
+    );
+    results.forEach(games => allGames.push(...games));
+  }
+
+  // Deduplicate by game id
+  const seen = new Set();
+  const unique = [];
+  for (const game of allGames) {
+    if (!seen.has(game.id)) {
+      seen.add(game.id);
+      unique.push(game);
+    }
+  }
+
+  unique.sort((a, b) => new Date(a.date) - new Date(b.date));
+  allGamesCache[cacheKey] = unique;
+  return unique;
+}
+
+function parseEvent(event) {
+  const comp = event.competitions?.[0] || {};
+  const status = comp.status || {};
+  const teams = (comp.competitors || []).map(c => ({
+    id: c.id,
+    name: c.team?.shortDisplayName || c.team?.displayName || 'TBD',
+    abbreviation: c.team?.abbreviation || '',
+    logo: c.team?.logo || '',
+    score: parseInt(c.score) || 0,
+    homeAway: c.homeAway,
+    winner: c.winner,
+    seed: c.curatedRank?.current || null,
+    linescores: (c.linescores || []).map(ls => ls.value || 0),
+    color: c.team?.color ? `#${c.team.color}` : null,
+  }));
+
+  const away = teams.find(t => t.homeAway === 'away') || teams[0] || {};
+  const home = teams.find(t => t.homeAway === 'home') || teams[1] || {};
+
+  const odds = comp.odds?.[0] || {};
+  const notes = comp.notes?.[0]?.headline || '';
+  const broadcasts = (comp.broadcasts || []).flatMap(b => b.names || []);
+
+  let round = '';
+  if (notes.includes('1st Round')) round = 'Round of 64';
+  else if (notes.includes('2nd Round')) round = 'Round of 32';
+  else if (notes.includes('Sweet 16') || notes.includes('Regional Semifinal')) round = 'Sweet 16';
+  else if (notes.includes('Elite 8') || notes.includes('Elite Eight') || notes.includes('Regional Final')) round = 'Elite 8';
+  else if (notes.includes('Final Four') || notes.includes('National Semifinal')) round = 'Final Four';
+  else if (notes.includes('Championship') || notes.includes('National Championship')) round = 'Championship';
+  else if (notes) round = notes.split(' - ').pop()?.trim() || '';
+
+  let region = '';
+  const regionMatch = notes.match(/(East|West|South|Midwest|Greensboro|Albany|Portland|Dallas)/i);
+  if (regionMatch) region = regionMatch[1];
+
+  return {
+    id: event.id,
+    date: event.date,
+    name: event.shortName || event.name,
+    away, home,
+    state: status.type?.state || 'pre',
+    statusText: getStatusText(status),
+    period: status.period || 0,
+    clock: status.displayClock || '',
+    vegasOU: odds.overUnder || null,
+    spread: odds.details || '',
+    round, region,
+    broadcast: broadcasts.join(', '),
+    venue: comp.venue?.fullName || '',
+  };
+}
+
+function getStatusText(status) {
+  const state = status.type?.state;
+  if (state === 'post') return 'Final';
+  if (state === 'in') {
+    const period = status.period || 1;
+    const clock = status.displayClock || '';
+    const half = period <= 2 ? `${period}H` : `OT${period - 2}`;
+    return `${half} ${clock}`;
+  }
+  // Pre
+  const d = new Date(status.type?.detail || '');
+  if (!isNaN(d)) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return status.type?.shortDetail || 'TBD';
+}
+
+// --- Calculations ---
+function calcHalfScore(game, half) {
+  if (half === '1h') {
+    const a = game.away.linescores[0] || 0;
+    const h = game.home.linescores[0] || 0;
+    return a + h;
+  }
+  if (half === '2h') {
+    const a = game.away.linescores[1] || 0;
+    const h = game.home.linescores[1] || 0;
+    return a + h;
+  }
+  if (half === 'full') {
+    return game.away.score + game.home.score;
+  }
+  return 0;
+}
+
+function isHalfComplete(game, half) {
+  if (game.state === 'post') return true;
+  if (game.state === 'pre') return false;
+  if (half === '1h') return game.period >= 2;
+  if (half === '2h') return game.state === 'post';
+  if (half === 'full') return game.state === 'post';
+  return false;
+}
+
+function isHalfInProgress(game, half) {
+  if (game.state !== 'in') return false;
+  if (half === '1h') return game.period === 1;
+  if (half === '2h') return game.period >= 2;
+  if (half === 'full') return true;
+  return false;
+}
+
+function getResult(line, actual, complete, inProgress) {
+  if (line === '' || line === null || line === undefined) return { diff: null, result: null };
+  const diff = actual - line;
+  if (!complete && !inProgress) return { diff: null, result: 'pending' };
+  if (!complete && inProgress) {
+    return { diff, result: diff > 0 ? 'pacing-over' : diff < 0 ? 'pacing-under' : 'pacing-push' };
+  }
+  if (diff > 0) return { diff, result: 'over' };
+  if (diff < 0) return { diff, result: 'under' };
+  return { diff: 0, result: 'push' };
+}
+
+// --- Rendering ---
+function renderSummary(games) {
+  const picks = loadPicks();
+  let wins = 0, losses = 0, pushes = 0, total = 0;
+  const byPeriod = { '1h': { w: 0, l: 0, p: 0 }, '2h': { w: 0, l: 0, p: 0 }, 'full': { w: 0, l: 0, p: 0 } };
+
+  games.forEach(game => {
+    ['1h', '2h', 'full'].forEach(period => {
+      const line = getPick(game.id, period);
+      const side = getSide(game.id, period);
+      if (line === '' || line === null || line === undefined) return;
+      if (!side) return; // need a side picked to count in record
+      const actual = calcHalfScore(game, period);
+      const complete = isHalfComplete(game, period);
+      if (!complete) return;
+      const { result } = getResult(line, actual, complete, false);
+      total++;
+      if (result === 'push') { pushes++; byPeriod[period].p++; }
+      else if (result === side) { wins++; byPeriod[period].w++; }
+      else { losses++; byPeriod[period].l++; }
+    });
+  });
+
+  const html = `
+    <div class="stat-card">
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">Settled Bets</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value over">${wins}</div>
+      <div class="stat-label">Wins</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value under">${losses}</div>
+      <div class="stat-label">Losses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value push">${pushes}</div>
+      <div class="stat-label">Pushes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${byPeriod['1h'].w}-${byPeriod['1h'].l}-${byPeriod['1h'].p}</div>
+      <div class="stat-label">1H Record</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${byPeriod['2h'].w}-${byPeriod['2h'].l}-${byPeriod['2h'].p}</div>
+      <div class="stat-label">2H Record</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${byPeriod['full'].w}-${byPeriod['full'].l}-${byPeriod['full'].p}</div>
+      <div class="stat-label">Full Record</div>
+    </div>
+  `;
+  document.getElementById('summary').innerHTML = html;
+}
+
+function renderGames(games) {
+  if (!games.length) {
+    document.getElementById('gamesList').innerHTML = `
+      <div class="no-games">
+        <h3>No tournament games on this date</h3>
+        <p>Use the arrows to navigate to a day with games, or switch to "All Dates".</p>
+      </div>`;
+    return;
+  }
+
+  // Group by round if in all view, otherwise just list
+  let html = '';
+  let lastRound = '';
+
+  games.forEach(game => {
+    if (currentDateMode !== 'single' && game.round && game.round !== lastRound) {
+      lastRound = game.round;
+      const dateStr = formatDateDisplay(new Date(game.date));
+      html += `<div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px;">
+        ${game.round}${game.region ? ` — ${game.region}` : ''} &middot; ${dateStr}
+      </div>`;
+    }
+
+    const isLive = game.state === 'in';
+    const isFinal = game.state === 'post';
+    const stateClass = isLive ? 'live' : isFinal ? 'final' : '';
+    const expandedClass = allExpanded ? 'expanded' : '';
+
+    html += `
+    <div class="game-card ${stateClass} ${expandedClass}" data-id="${game.id}">
+      <div class="game-header" onclick="toggleGame('${game.id}')">
+        <div class="game-teams">
+          <div class="team-row">
+            ${game.away.logo ? `<img class="team-logo" src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+            <span class="team-seed">${game.away.seed || ''}</span>
+            <span class="team-name ${game.away.winner ? 'winner' : ''}">${game.away.name}</span>
+            ${game.state !== 'pre' ? `<span class="team-score">${game.away.score}</span>` : ''}
+          </div>
+          <div class="team-row">
+            ${game.home.logo ? `<img class="team-logo" src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+            <span class="team-seed">${game.home.seed || ''}</span>
+            <span class="team-name ${game.home.winner ? 'winner' : ''}">${game.home.name}</span>
+            ${game.state !== 'pre' ? `<span class="team-score">${game.home.score}</span>` : ''}
+          </div>
+        </div>
+        <div class="game-meta">
+          <div class="game-status ${game.state}">${isLive ? '● ' : ''}${game.statusText}</div>
+          ${game.round ? `<div class="game-round">${game.round}</div>` : ''}
+          ${game.broadcast ? `<div class="game-broadcast">${game.broadcast}</div>` : ''}
+        </div>
+        <span class="expand-icon">▼</span>
+      </div>
+      <div class="ou-section">
+        ${renderOUTable(game)}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('gamesList').innerHTML = html;
+}
+
+function renderOUTable(game) {
+  const periods = [
+    { key: '1h', label: '1st Half' },
+    { key: '2h', label: '2nd Half' },
+    { key: 'full', label: 'Full Game' },
+  ];
+
+  let rows = '';
+  periods.forEach(({ key, label }) => {
+    const line = getPick(game.id, key);
+    const side = getSide(game.id, key);
+    const actual = calcHalfScore(game, key);
+    const complete = isHalfComplete(game, key);
+    const inProgress = isHalfInProgress(game, key);
+    const { diff, result } = getResult(line, actual, complete, inProgress);
+
+    const showScore = game.state !== 'pre' && (key === 'full' || game.away.linescores.length > (key === '1h' ? 0 : 1));
+
+    let diffHtml = '-';
+    let resultHtml = '';
+
+    if (diff !== null && line !== '' && line !== null && line !== undefined) {
+      const sign = diff > 0 ? '+' : '';
+      const cls = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
+      diffHtml = `<span class="diff-value ${cls}">${sign}${diff.toFixed(1)}</span>`;
+    }
+
+    if (result && result !== 'pending' && line !== '' && line !== null && line !== undefined) {
+      const isPacing = result.startsWith('pacing-');
+      const baseResult = isPacing ? result.replace('pacing-', '') : result;
+      // If they picked a side, show WIN/LOSS instead of just OVER/UNDER
+      if (side && !isPacing && baseResult !== 'push') {
+        const won = side === baseResult;
+        const wlLabel = won ? 'WIN' : 'LOSS';
+        const wlClass = won ? 'win' : 'loss';
+        resultHtml = `<span class="result-badge ${wlClass}">${wlLabel}</span>`;
+      } else if (baseResult === 'push') {
+        resultHtml = `<span class="result-badge push">PUSH</span>`;
+      } else {
+        const pacingLabel = isPacing ? `PACING ${baseResult.toUpperCase()}` : baseResult.toUpperCase();
+        resultHtml = `<span class="result-badge ${baseResult}">${pacingLabel}</span>`;
+      }
+    }
+
+    const sideHtml = `
+      <div class="side-toggle">
+        <button class="side-btn ${side === 'over' ? 'active-over' : ''}" data-game="${game.id}" data-period="${key}" data-side="over" onclick="onSideChange(this)">O</button>
+        <button class="side-btn ${side === 'under' ? 'active-under' : ''}" data-game="${game.id}" data-period="${key}" data-side="under" onclick="onSideChange(this)">U</button>
+      </div>`;
+
+    rows += `
+      <tr>
+        <td class="period-label">${label}</td>
+        <td>${sideHtml}</td>
+        <td><input class="ou-input" type="number" step="0.5" value="${line}" placeholder="${key === 'full' && game.vegasOU ? game.vegasOU : '—'}" data-game="${game.id}" data-period="${key}" onchange="onPickChange(this)" onblur="onPickChange(this)"></td>
+        <td>${showScore ? actual : '-'}</td>
+        <td>${diffHtml}</td>
+        <td>${resultHtml}</td>
+      </tr>`;
+  });
+
+  const vegasHint = game.vegasOU ? `<div class="vegas-hint">Vegas O/U: ${game.vegasOU}${game.spread ? ` | Spread: ${game.spread}` : ''}</div>` : '';
+
+  return `
+    <table class="ou-table">
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Bet</th>
+          <th>Your Line</th>
+          <th>Actual</th>
+          <th>Diff</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${vegasHint}`;
+}
+
+// --- Interactions ---
+function renderTracker(games) {
+  // Build tracker summary totals across games passed in
+  const allGames = games;
+  let totalWins = 0, totalLosses = 0, totalPushes = 0, totalInProgress = 0, totalPending = 0;
+
+  allGames.forEach(game => {
+    ['1h', '2h', 'full'].forEach(period => {
+      const line = getPick(game.id, period);
+      const side = getSide(game.id, period);
+      if (line === '' || line === null || line === undefined || !side) return;
+      const actual = calcHalfScore(game, period);
+      const complete = isHalfComplete(game, period);
+      const inProgress = isHalfInProgress(game, period);
+      if (!complete && !inProgress) { totalPending++; return; }
+      if (!complete && inProgress) { totalInProgress++; return; }
+      const { result } = getResult(line, actual, complete, false);
+      if (result === 'push') totalPushes++;
+      else if (result === side) totalWins++;
+      else totalLosses++;
+    });
+  });
+
+  // Summary bar
+  let html = `
+    <div class="tracker-summary">
+      <div class="stat-card">
+        <div class="stat-value over">${totalWins}</div>
+        <div class="stat-label">Winners</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value under">${totalLosses}</div>
+        <div class="stat-label">Losers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value push">${totalPushes}</div>
+        <div class="stat-label">Pushes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:var(--live)">${totalInProgress}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${totalPending}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>`;
+
+  // Filter to games that have at least one bet
+  const bettedGames = games.filter(game => {
+    return ['1h', '2h', 'full'].some(p => {
+      const line = getPick(game.id, p);
+      return line !== '' && line !== null && line !== undefined;
+    });
+  });
+
+  const unbettedGames = games.filter(game => {
+    return !['1h', '2h', 'full'].some(p => {
+      const line = getPick(game.id, p);
+      return line !== '' && line !== null && line !== undefined;
+    });
+  });
+
+  if (!bettedGames.length && !unbettedGames.length) {
+    html += `<div class="no-games"><h3>No games on this date</h3><p>Navigate to a game day to see your bets.</p></div>`;
+    document.getElementById('gamesList').innerHTML = html;
+    return;
+  }
+
+  if (!bettedGames.length) {
+    html += `<div class="no-games"><h3>No bets entered for this date</h3><p>Go to "By Date" view to enter your lines and pick O/U.</p></div>`;
+    document.getElementById('gamesList').innerHTML = html;
+    return;
+  }
+
+  bettedGames.forEach(game => {
+    const isLive = game.state === 'in';
+    const isFinal = game.state === 'post';
+    const statusClass = isLive ? 'live' : isFinal ? 'final' : 'pre';
+    const hasLiveBet = isLive ? 'has-live' : '';
+
+    const genderBadge = currentGender === 'both' && game.gender
+      ? `<span style="font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:3px;background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'};margin-right:4px;">${game.gender === 'mens' ? 'M' : 'W'}</span>`
+      : '';
+    const dateLabel = currentDateMode !== 'single'
+      ? `<span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px;">${formatDateDisplay(new Date(game.date))}</span>`
+      : '';
+
+    html += `<div class="tracker-game ${hasLiveBet}">`;
+    html += `<div class="tracker-game-header">
+      <div class="tracker-matchup">
+        ${genderBadge}
+        ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+        <span>${game.away.seed ? `(${game.away.seed}) ` : ''}${game.away.abbreviation || game.away.name}</span>
+        ${game.state !== 'pre' ? `<span class="tracker-score">${game.away.score}</span>` : ''}
+        <span style="color:var(--text-muted);margin:0 4px;">vs</span>
+        ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+        <span>${game.home.seed ? `(${game.home.seed}) ` : ''}${game.home.abbreviation || game.home.name}</span>
+        ${game.state !== 'pre' ? `<span class="tracker-score">${game.home.score}</span>` : ''}
+        ${dateLabel}
+      </div>
+      <span class="tracker-status ${statusClass}">${isLive ? '● ' : ''}${game.statusText}</span>
+    </div>`;
+
+    html += `<div class="tracker-bets">`;
+    ['1h', '2h', 'full'].forEach(period => {
+      const periodLabel = period === '1h' ? '1st Half' : period === '2h' ? '2nd Half' : 'Full Game';
+      const line = getPick(game.id, period);
+      const side = getSide(game.id, period);
+
+      if (line === '' || line === null || line === undefined) {
+        html += `<div class="tracker-bet"><div class="tracker-bet-label">${periodLabel}</div><div class="tracker-no-bet">No bet</div></div>`;
+        return;
+      }
+
+      const actual = calcHalfScore(game, period);
+      const complete = isHalfComplete(game, period);
+      const inProgress = isHalfInProgress(game, period);
+      const showScore = game.state !== 'pre' && (period === 'full' || game.away.linescores.length > (period === '1h' ? 0 : 1));
+      const { diff, result } = getResult(line, actual, complete, inProgress);
+
+      // Side display
+      const sideLabel = side ? side.toUpperCase() : '—';
+      const sideClass = side || '';
+
+      // Diff display
+      let diffHtml = '';
+      if (diff !== null) {
+        const sign = diff > 0 ? '+' : '';
+        const cls = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
+        diffHtml = `<div class="tracker-bet-diff diff-value ${cls}">${sign}${diff.toFixed(1)}</div>`;
+      }
+
+      // Token
+      let tokenHtml = '';
+      if (result && result !== 'pending') {
+        const isPacing = result.startsWith('pacing-');
+        const baseResult = isPacing ? result.replace('pacing-', '') : result;
+        if (isPacing) {
+          tokenHtml = `<span class="tracker-token live">LIVE</span>`;
+        } else if (baseResult === 'push') {
+          tokenHtml = `<span class="tracker-token push">PUSH</span>`;
+        } else if (side) {
+          const won = side === baseResult;
+          tokenHtml = won
+            ? `<span class="tracker-token win">W</span>`
+            : `<span class="tracker-token loss">L</span>`;
+        } else {
+          tokenHtml = `<span class="tracker-token ${baseResult}">${baseResult.toUpperCase()}</span>`;
+        }
+      } else if (game.state === 'pre') {
+        tokenHtml = `<span class="tracker-token pending">PRE</span>`;
+      }
+
+      html += `
+        <div class="tracker-bet">
+          <div class="tracker-bet-label">${periodLabel}</div>
+          <div class="tracker-bet-side ${sideClass}">${sideLabel} ${line}</div>
+          ${showScore ? `<div class="tracker-bet-actual">${actual}</div>` : '<div class="tracker-bet-actual">—</div>'}
+          ${diffHtml}
+          ${tokenHtml}
+        </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  // Show unbetted games in a smaller section
+  if (unbettedGames.length) {
+    html += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">No Bets Entered</div>`;
+    unbettedGames.forEach(game => {
+      const statusClass = game.state === 'in' ? 'live' : game.state === 'post' ? 'final' : 'pre';
+      const gb = currentGender === 'both' && game.gender
+        ? `<span style="font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:3px;background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'};margin-right:4px;">${game.gender === 'mens' ? 'M' : 'W'}</span>`
+        : '';
+      const dl = currentDateMode !== 'single'
+        ? `<span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px;">${formatDateDisplay(new Date(game.date))}</span>`
+        : '';
+      html += `<div class="tracker-game" style="opacity:0.5">
+        <div class="tracker-game-header">
+          <div class="tracker-matchup">
+            ${gb}
+            <span>${game.away.seed ? `(${game.away.seed}) ` : ''}${game.away.abbreviation || game.away.name}</span>
+            ${game.state !== 'pre' ? `<span class="tracker-score">${game.away.score}</span>` : ''}
+            <span style="color:var(--text-muted);margin:0 4px;">vs</span>
+            <span>${game.home.seed ? `(${game.home.seed}) ` : ''}${game.home.abbreviation || game.home.name}</span>
+            ${game.state !== 'pre' ? `<span class="tracker-score">${game.home.score}</span>` : ''}
+            ${dl}
+          </div>
+          <span class="tracker-status ${statusClass}">${game.state === 'in' ? '● ' : ''}${game.statusText}</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('gamesList').innerHTML = html;
+}
+
+function toggleGame(id) {
+  const card = document.querySelector(`.game-card[data-id="${id}"]`);
+  if (card) card.classList.toggle('expanded');
+}
+
+function findGame(gameId) {
+  for (const games of Object.values(gamesData)) {
+    const g = games.find(g => g.id === gameId);
+    if (g) return g;
+  }
+  for (const games of Object.values(allGamesCache)) {
+    const g = games.find(g => g.id === gameId);
+    if (g) return g;
+  }
+  return null;
+}
+
+function reRenderGameCard(gameId, focusPeriod) {
+  const game = findGame(gameId);
+  if (game) {
+    const card = document.querySelector(`.game-card[data-id="${gameId}"]`);
+    if (card) {
+      const section = card.querySelector('.ou-section');
+      section.innerHTML = renderOUTable(game);
+      if (focusPeriod) {
+        const newInput = section.querySelector(`input[data-period="${focusPeriod}"]`);
+        if (newInput) newInput.focus();
+      }
+    }
+  }
+  renderSummary(getAllCachedGames());
+}
+
+function onPickChange(input) {
+  const gameId = input.dataset.game;
+  const period = input.dataset.period;
+  savePick(gameId, period, input.value);
+  reRenderGameCard(gameId, period);
+}
+
+function onSideChange(btn) {
+  const gameId = btn.dataset.game;
+  const period = btn.dataset.period;
+  const side = btn.dataset.side;
+  const currentSide = getSide(gameId, period);
+  // Toggle: if already selected, deselect
+  saveSide(gameId, period, currentSide === side ? '' : side);
+  reRenderGameCard(gameId);
+}
+
+function getAllCachedGames() {
+  const all = [];
+  const seen = new Set();
+  Object.values(gamesData).forEach(games => {
+    games.forEach(g => {
+      if (!seen.has(g.id)) { seen.add(g.id); all.push(g); }
+    });
+  });
+  if (allGamesCache[currentGender]) {
+    allGamesCache[currentGender].forEach(g => {
+      if (!seen.has(g.id)) { seen.add(g.id); all.push(g); }
+    });
+  }
+  return all;
+}
+
+// --- Data Loading ---
+async function fetchGamesByFilters() {
+  const genders = currentGender === 'both' ? ['mens', 'womens'] : [currentGender];
+  let allGames = [];
+
+  if (currentDateMode === 'single') {
+    const fetches = genders.map(g => fetchGames(g, currentDate));
+    const results = await Promise.all(fetches);
+    results.forEach((games, i) => {
+      const key = `${genders[i]}_${formatDateParam(currentDate)}`;
+      gamesData[key] = games;
+      allGames.push(...games.map(g => ({ ...g, gender: genders[i] })));
+    });
+  } else if (currentDateMode === 'range') {
+    const start = new Date(currentDate);
+    const end = new Date(endDate);
+    if (end < start) { end.setTime(start.getTime()); }
+    const dates = [];
+    const d = new Date(start);
+    while (d <= end) {
+      dates.push(new Date(d));
+      d.setDate(d.getDate() + 1);
+    }
+    const fetches = [];
+    for (const gender of genders) {
+      for (const date of dates) {
+        fetches.push(fetchGames(gender, date).then(games => {
+          const key = `${gender}_${formatDateParam(date)}`;
+          gamesData[key] = games;
+          return games.map(g => ({ ...g, gender }));
+        }));
+      }
+    }
+    const results = await Promise.all(fetches);
+    results.forEach(games => allGames.push(...games));
+  } else {
+    // All dates
+    const fetches = genders.map(g => fetchAllGames(g).then(games => games.map(gm => ({ ...gm, gender: g }))));
+    const results = await Promise.all(fetches);
+    results.forEach(games => allGames.push(...games));
+  }
+
+  // Deduplicate and sort
+  const seen = new Set();
+  allGames = allGames.filter(g => {
+    if (seen.has(g.id)) return false;
+    seen.add(g.id);
+    return true;
+  });
+  allGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return allGames;
+}
+
+let isFirstLoad = true;
+
+async function loadCurrentView() {
+  if (isFirstLoad) {
+    document.getElementById('gamesList').innerHTML = '<div class="loading">Loading games...</div>';
+  }
+
+  // Show/hide controls based on state
+  document.getElementById('dateNav').style.display = currentDateMode !== 'all' ? 'flex' : 'none';
+  document.getElementById('dateEndPicker').style.display = currentDateMode === 'range' ? 'inline-flex' : 'none';
+  document.getElementById('summary').style.display = currentTab === 'input' ? '' : 'none';
+  document.getElementById('expandAll').style.display = currentTab === 'input' ? '' : 'none';
+
+  const games = await fetchGamesByFilters();
+
+  if (currentTab === 'input') {
+    renderGames(games);
+    renderSummary(games);
+  } else {
+    renderTracker(games);
+  }
+
+  isFirstLoad = false;
+  updateRefreshInfo();
+}
+
+function updateRefreshInfo() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  document.getElementById('refreshInfo').textContent = `Updated ${timeStr}`;
+
+  // Check if any game is live
+  const hasLive = Object.values(gamesData).some(games => games.some(g => g.state === 'in')) ||
+    Object.values(allGamesCache).some(games => games.some(g => g.state === 'in'));
+  document.getElementById('liveDot').style.display = hasLive ? 'inline-block' : 'none';
+}
+
+async function refresh() {
+  // Save expanded state
+  const expandedIds = new Set();
+  document.querySelectorAll('.game-card.expanded').forEach(card => {
+    expandedIds.add(card.dataset.id);
+  });
+
+  // Save input focus
+  const focused = document.activeElement;
+  const focusedGame = focused?.dataset?.game;
+  const focusedPeriod = focused?.dataset?.period;
+
+  await loadCurrentView();
+
+  // Restore expanded state
+  expandedIds.forEach(id => {
+    const card = document.querySelector(`.game-card[data-id="${id}"]`);
+    if (card) card.classList.add('expanded');
+  });
+
+  // Restore focus
+  if (focusedGame && focusedPeriod) {
+    const input = document.querySelector(`input[data-game="${focusedGame}"][data-period="${focusedPeriod}"]`);
+    if (input) input.focus();
+  }
+}
+
+let tickerCount = 0;
+let tickerTimer = null;
+
+function renderTicker(count) {
+  const ticker = document.getElementById('refreshTicker');
+  const pips = Array.from({ length: 5 }, (_, i) =>
+    `<span class="ticker-pip ${i < count ? 'active' : ''}"></span>`
+  ).join('');
+  ticker.innerHTML = `<span class="${count === 0 ? 'ticker-bounce' : ''}">🏀</span><span class="ticker-bar">${pips}</span>`;
+}
+
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  if (tickerTimer) clearInterval(tickerTimer);
+
+  tickerCount = 0;
+  renderTicker(0);
+
+  tickerTimer = setInterval(() => {
+    tickerCount++;
+    renderTicker(tickerCount);
+    if (tickerCount >= 5) {
+      tickerCount = 0;
+      refresh().then(() => renderTicker(0));
+    }
+  }, 1000);
+}
+
+// --- Event Listeners ---
+document.getElementById('userName').value = getUserName();
+document.getElementById('userName').addEventListener('input', function() {
+  setUserName(this.value);
+});
+
+// Main tab toggle
+document.querySelectorAll('#mainTabs .toggle-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#mainTabs .toggle-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentTab = this.dataset.value;
+    isFirstLoad = true; loadCurrentView();
+  });
+});
+
+// Gender toggle (shared)
+document.querySelectorAll('#genderToggle .toggle-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#genderToggle .toggle-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentGender = this.dataset.value;
+    isFirstLoad = true; loadCurrentView();
+  });
+});
+
+// Date mode toggle (shared)
+document.querySelectorAll('#dateMode .toggle-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#dateMode .toggle-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentDateMode = this.dataset.value;
+    isFirstLoad = true; loadCurrentView();
+  });
+});
+
+// End date input for range mode
+document.getElementById('endDateInput').addEventListener('change', function() {
+  endDate = new Date(this.value + 'T12:00:00');
+  isFirstLoad = true; loadCurrentView();
+});
+
+document.getElementById('prevDay').addEventListener('click', () => {
+  currentDate.setDate(currentDate.getDate() - 1);
+  document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+  isFirstLoad = true; loadCurrentView();
+});
+
+document.getElementById('nextDay').addEventListener('click', () => {
+  currentDate.setDate(currentDate.getDate() + 1);
+  document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+  isFirstLoad = true; loadCurrentView();
+});
+
+document.getElementById('expandAll').addEventListener('click', () => {
+  allExpanded = !allExpanded;
+  document.querySelectorAll('.game-card').forEach(card => {
+    if (allExpanded) card.classList.add('expanded');
+    else card.classList.remove('expanded');
+  });
+  document.getElementById('expandAll').textContent = allExpanded ? 'Collapse All' : 'Expand All';
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = {
+    name: getUserName(),
+    picks: loadPicks(),
+    exported: new Date().toISOString(),
+  };
+  document.getElementById('exportData').value = JSON.stringify(data, null, 2);
+  document.getElementById('exportModal').classList.add('active');
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importData').value = '';
+  document.getElementById('importModal').classList.add('active');
+});
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function copyExport() {
+  const textarea = document.getElementById('exportData');
+  textarea.select();
+  navigator.clipboard.writeText(textarea.value).then(() => {
+    const btn = document.querySelector('#exportModal .btn-primary');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+  });
+}
+
+function doImport() {
+  try {
+    const data = JSON.parse(document.getElementById('importData').value);
+    if (!data.picks) throw new Error('Invalid format');
+    const name = data.name || 'Imported';
+    // Merge into current picks (imported picks don't overwrite existing)
+    const currentPicks = loadPicks();
+    Object.entries(data.picks).forEach(([gameId, periods]) => {
+      if (!currentPicks[gameId]) currentPicks[gameId] = {};
+      Object.entries(periods).forEach(([period, value]) => {
+        // Only import if user doesn't have a pick for this
+        if (currentPicks[gameId][period] === undefined) {
+          currentPicks[gameId][period] = value;
+        }
+      });
+    });
+    savePicks(currentPicks);
+    closeModal('importModal');
+    refresh();
+    alert(`Imported picks from "${name}". Only games you hadn't entered lines for were updated.`);
+  } catch (e) {
+    alert('Invalid JSON format. Please paste the exported data exactly as copied.');
+  }
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+});
+
+// --- Init ---
+document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+// Set default end date for range picker
+const defaultEnd = new Date(currentDate);
+defaultEnd.setDate(defaultEnd.getDate() + 1);
+document.getElementById('endDateInput').value = defaultEnd.toISOString().split('T')[0];
+endDate = defaultEnd;
+
+loadCurrentView();
+startAutoRefresh();
+</script>
+</body>
+</html>
