@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>March Madness O/U Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -563,6 +565,64 @@ body {
   font-style: italic;
 }
 
+.sync-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sync-badge.connected { background: rgba(34,197,94,0.15); color: var(--over); }
+.sync-badge.local { background: rgba(139,141,151,0.1); color: var(--text-muted); }
+
+.settings-field {
+  margin-bottom: 12px;
+}
+
+.settings-field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-field input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: monospace;
+}
+
+.settings-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.settings-field .hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.settings-status {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  margin-bottom: 12px;
+}
+
+.settings-status.ok { background: rgba(34,197,94,0.1); color: var(--over); }
+.settings-status.off { background: rgba(139,141,151,0.1); color: var(--text-muted); }
+
 .tracker-controls {
   display: flex;
   align-items: center;
@@ -725,6 +785,8 @@ body {
       <button class="btn-sm" id="expandAll">Expand All</button>
       <button class="btn-sm" id="exportBtn">Export</button>
       <button class="btn-sm" id="importBtn">Import</button>
+      <button class="btn-sm" id="settingsBtn">⚙ Sync</button>
+      <span class="sync-badge local" id="syncBadge">Local</span>
     </div>
     <div class="refresh-info">
       <span id="liveDot" class="live-dot" style="display:none"></span>
@@ -765,6 +827,25 @@ body {
   </div>
 </div>
 
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>Sync Settings</h3>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">Connect to Firebase to sync bets across devices in real-time. All devices using the same URL and name will share data.</p>
+    <div id="settingsStatus" class="settings-status off">Not connected — using local storage only</div>
+    <div class="settings-field">
+      <label>Firebase Database URL</label>
+      <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" />
+      <div class="hint">Find this in Firebase Console → Realtime Database → Copy the URL at the top</div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="disconnectFirebase()">Disconnect</button>
+      <button class="btn" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="connectFirebase()">Connect</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // --- State ---
 let currentTab = 'input'; // 'input' or 'tracker'
@@ -783,13 +864,151 @@ const TOURNAMENT_END = new Date('2026-04-07');
 // For the current year's tournament, we check multiple date ranges
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/basketball';
 
-// --- localStorage ---
+// --- Firebase + localStorage Data Layer ---
+let firebaseDb = null;
+let firebaseListener = null;
+let picksCache = {};
+
 function getUserName() {
   return localStorage.getItem('mm_username') || '';
 }
 
 function setUserName(name) {
+  const oldName = localStorage.getItem('mm_username');
   localStorage.setItem('mm_username', name);
+  // Re-attach Firebase listener if name changed
+  if (oldName !== name && firebaseDb) {
+    setupFirebaseListener();
+  }
+}
+
+function getFirebaseUrl() {
+  return localStorage.getItem('mm_firebase_url') || '';
+}
+
+function setFirebaseUrl(url) {
+  localStorage.setItem('mm_firebase_url', url);
+}
+
+function isFirebaseConnected() {
+  return !!firebaseDb;
+}
+
+function updateSyncBadge() {
+  const badge = document.getElementById('syncBadge');
+  if (isFirebaseConnected()) {
+    badge.textContent = 'Synced';
+    badge.className = 'sync-badge connected';
+  } else {
+    badge.textContent = 'Local';
+    badge.className = 'sync-badge local';
+  }
+}
+
+function initFirebase(url) {
+  try {
+    // Clean up existing
+    if (firebaseListener && firebaseDb) {
+      const name = getUserName() || 'default';
+      firebaseDb.ref('picks/' + name).off('value', firebaseListener);
+      firebaseListener = null;
+    }
+    if (firebase.apps.length) {
+      firebase.app().delete().then(() => {
+        doFirebaseInit(url);
+      });
+    } else {
+      doFirebaseInit(url);
+    }
+  } catch (e) {
+    console.error('Firebase init error:', e);
+    firebaseDb = null;
+    updateSyncBadge();
+  }
+}
+
+function doFirebaseInit(url) {
+  try {
+    const app = firebase.initializeApp({ databaseURL: url });
+    firebaseDb = firebase.database();
+    setFirebaseUrl(url);
+    setupFirebaseListener();
+    updateSyncBadge();
+    // Sync existing localStorage picks to Firebase
+    const localKey = `mm_picks_${getUserName() || 'default'}`;
+    try {
+      const localPicks = JSON.parse(localStorage.getItem(localKey) || '{}');
+      if (Object.keys(localPicks).length > 0 && Object.keys(picksCache).length === 0) {
+        // Push local picks to Firebase if Firebase is empty
+        const name = getUserName() || 'default';
+        firebaseDb.ref('picks/' + name).update(flattenPicks(localPicks));
+      }
+    } catch(e) {}
+  } catch(e) {
+    console.error('Firebase init failed:', e);
+    firebaseDb = null;
+    updateSyncBadge();
+  }
+}
+
+function flattenPicks(picks) {
+  // Firebase doesn't store undefined/deleted keys well, so we set the whole object
+  return picks;
+}
+
+function setupFirebaseListener() {
+  if (!firebaseDb) return;
+  const name = getUserName() || 'default';
+
+  // Remove old listener
+  if (firebaseListener) {
+    firebaseDb.ref('picks/' + name).off('value', firebaseListener);
+  }
+
+  firebaseListener = firebaseDb.ref('picks/' + name).on('value', (snapshot) => {
+    picksCache = snapshot.val() || {};
+    // Also save to localStorage as backup
+    const localKey = `mm_picks_${name}`;
+    localStorage.setItem(localKey, JSON.stringify(picksCache));
+    // Re-render to show changes from other devices
+    if (!isFirstLoad) {
+      refresh();
+    }
+  });
+}
+
+function disconnectFirebase() {
+  if (firebaseListener && firebaseDb) {
+    const name = getUserName() || 'default';
+    firebaseDb.ref('picks/' + name).off('value', firebaseListener);
+    firebaseListener = null;
+  }
+  if (firebase.apps.length) {
+    firebase.app().delete();
+  }
+  firebaseDb = null;
+  localStorage.removeItem('mm_firebase_url');
+  updateSyncBadge();
+  updateSettingsStatus();
+  closeModal('settingsModal');
+}
+
+function connectFirebase() {
+  const url = document.getElementById('firebaseUrlInput').value.trim();
+  if (!url) { alert('Please enter a Firebase Database URL'); return; }
+  initFirebase(url);
+  closeModal('settingsModal');
+}
+
+function updateSettingsStatus() {
+  const status = document.getElementById('settingsStatus');
+  if (isFirebaseConnected()) {
+    status.textContent = 'Connected — syncing in real-time across devices';
+    status.className = 'settings-status ok';
+  } else {
+    status.textContent = 'Not connected — using local storage only';
+    status.className = 'settings-status off';
+  }
 }
 
 function getPicksKey() {
@@ -797,13 +1016,23 @@ function getPicksKey() {
 }
 
 function loadPicks() {
+  if (isFirebaseConnected()) {
+    return picksCache;
+  }
   try {
     return JSON.parse(localStorage.getItem(getPicksKey()) || '{}');
   } catch { return {}; }
 }
 
 function savePicks(picks) {
+  // Always save to localStorage as backup
   localStorage.setItem(getPicksKey(), JSON.stringify(picks));
+
+  if (isFirebaseConnected()) {
+    const name = getUserName() || 'default';
+    firebaseDb.ref('picks/' + name).set(picks);
+    picksCache = picks;
+  }
 }
 
 function savePick(gameId, period, value) {
@@ -1757,6 +1986,13 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 
+// Settings button
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  document.getElementById('firebaseUrlInput').value = getFirebaseUrl();
+  updateSettingsStatus();
+  document.getElementById('settingsModal').classList.add('active');
+});
+
 // --- Init ---
 document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
 // Set default end date for range picker
@@ -1764,6 +2000,12 @@ const defaultEnd = new Date(currentDate);
 defaultEnd.setDate(defaultEnd.getDate() + 1);
 document.getElementById('endDateInput').value = defaultEnd.toISOString().split('T')[0];
 endDate = defaultEnd;
+
+// Auto-connect to Firebase if URL was previously saved
+const savedFirebaseUrl = getFirebaseUrl();
+if (savedFirebaseUrl) {
+  initFirebase(savedFirebaseUrl);
+}
 
 loadCurrentView();
 startAutoRefresh();
