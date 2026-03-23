@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>March Madness O/U Tracker</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -62,14 +63,84 @@ body {
   gap: 8px;
 }
 
-.user-section input {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+}
+
+.user-name {
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--text);
-  padding: 6px 10px;
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-google:hover { border-color: var(--accent); background: var(--card-hover); }
+
+.btn-google img {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-signout {
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 0.85rem;
-  width: 130px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-signout:hover { border-color: var(--under); color: var(--under); }
+
+/* Auth overlay */
+.auth-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 40px;
+}
+
+.auth-overlay h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #fb923c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.auth-overlay p {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.auth-overlay .btn-google {
+  font-size: 1rem;
+  padding: 12px 28px;
 }
 
 .controls {
@@ -577,52 +648,6 @@ body {
 .sync-badge.connected { background: rgba(34,197,94,0.15); color: var(--over); }
 .sync-badge.local { background: rgba(139,141,151,0.1); color: var(--text-muted); }
 
-.settings-field {
-  margin-bottom: 12px;
-}
-
-.settings-field label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.settings-field input {
-  width: 100%;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-family: monospace;
-}
-
-.settings-field input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.settings-field .hint {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.settings-status {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  margin-bottom: 12px;
-}
-
-.settings-status.ok { background: rgba(34,197,94,0.1); color: var(--over); }
-.settings-status.off { background: rgba(139,141,151,0.1); color: var(--text-muted); }
-
 .tracker-controls {
   display: flex;
   align-items: center;
@@ -750,11 +775,26 @@ body {
 </head>
 <body>
 
+<!-- Auth screen (shown when not signed in) -->
+<div id="authScreen" class="auth-overlay">
+  <h2>March Madness O/U Tracker</h2>
+  <p>Sign in to sync your bets across all your devices</p>
+  <button class="btn-google" id="signInBtn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+    Sign in with Google
+  </button>
+</div>
+
+<!-- App (shown when signed in) -->
+<div id="appContainer" style="display:none">
 <div class="header">
   <div class="header-top">
     <h1>March Madness O/U Tracker</h1>
-    <div class="user-section">
-      <input type="text" id="userName" placeholder="Your name" />
+    <div class="user-section" id="userSection">
+      <img class="user-avatar" id="userAvatar" src="" alt="" style="display:none">
+      <span class="user-name" id="userDisplayName"></span>
+      <span class="sync-badge connected" id="syncBadge">Synced</span>
+      <button class="btn-signout" id="signOutBtn">Sign Out</button>
     </div>
   </div>
   <div class="controls">
@@ -785,12 +825,10 @@ body {
       <button class="btn-sm" id="expandAll">Expand All</button>
       <button class="btn-sm" id="exportBtn">Export</button>
       <button class="btn-sm" id="importBtn">Import</button>
-      <button class="btn-sm" id="settingsBtn">⚙ Sync</button>
-      <span class="sync-badge local" id="syncBadge">Local</span>
     </div>
     <div class="refresh-info">
       <span id="liveDot" class="live-dot" style="display:none"></span>
-      <span id="refreshTicker">🏀<span id="tickerDots"></span></span>
+      <span id="refreshTicker"></span>
       <span id="refreshInfo">Loading...</span>
     </div>
   </div>
@@ -799,6 +837,7 @@ body {
 <div class="main">
   <div class="summary" id="summary"></div>
   <div id="gamesList"></div>
+</div>
 </div>
 
 <!-- Export Modal -->
@@ -827,212 +866,164 @@ body {
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal">
-    <h3>Sync Settings</h3>
-    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">Connect to Firebase to sync bets across devices in real-time. All devices using the same URL and name will share data.</p>
-    <div id="settingsStatus" class="settings-status off">Not connected — using local storage only</div>
-    <div class="settings-field">
-      <label>Firebase Database URL</label>
-      <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" />
-      <div class="hint">Find this in Firebase Console → Realtime Database → Copy the URL at the top</div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn" onclick="disconnectFirebase()">Disconnect</button>
-      <button class="btn" onclick="closeModal('settingsModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="connectFirebase()">Connect</button>
-    </div>
-  </div>
-</div>
-
 <script>
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDvvsp6s7hReRes--Zldt0fmYL2fQbdMjo",
+  authDomain: "march-madness-tracker-6e8ee.firebaseapp.com",
+  databaseURL: "https://march-madness-tracker-6e8ee-default-rtdb.firebaseio.com",
+  projectId: "march-madness-tracker-6e8ee",
+  storageBucket: "march-madness-tracker-6e8ee.firebasestorage.app",
+  messagingSenderId: "545630366760",
+  appId: "1:545630366760:web:c7502d9b2b43d5be21991d",
+  measurementId: "G-F0K8ZMF558"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
 // --- State ---
-let currentTab = 'input'; // 'input' or 'tracker'
-let currentGender = 'mens'; // 'mens', 'womens', 'both'
-let currentDateMode = 'single'; // 'single', 'range', 'all'
+let currentTab = 'input';
+let currentGender = 'mens';
+let currentDateMode = 'single';
 let currentDate = new Date();
 let endDate = new Date();
 let gamesData = {};
-let refreshTimer = null;
 let allExpanded = false;
 let allGamesCache = {};
+let currentUser = null;
+let picksCache = {};
+let firebaseListener = null;
+let isFirstLoad = true;
 
 const TOURNAMENT_START = new Date('2026-03-17');
 const TOURNAMENT_END = new Date('2026-04-07');
-
-// For the current year's tournament, we check multiple date ranges
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/basketball';
 
-// --- Firebase + localStorage Data Layer ---
-let firebaseDb = null;
-let firebaseListener = null;
-let picksCache = {};
+// --- Auth ---
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('appContainer').style.display = '';
 
-function getUserName() {
-  return localStorage.getItem('mm_username') || '';
-}
+    // Show user info
+    const avatar = document.getElementById('userAvatar');
+    if (user.photoURL) {
+      avatar.src = user.photoURL;
+      avatar.style.display = '';
+    }
+    document.getElementById('userDisplayName').textContent = user.displayName || user.email;
 
-function setUserName(name) {
-  const oldName = localStorage.getItem('mm_username');
-  localStorage.setItem('mm_username', name);
-  // Re-attach Firebase listener if name changed
-  if (oldName !== name && firebaseDb) {
+    // Start listening to Firebase for this user's picks
     setupFirebaseListener();
-  }
-}
 
-function getFirebaseUrl() {
-  return localStorage.getItem('mm_firebase_url') || '';
-}
+    // Init the app
+    document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+    const defaultEnd = new Date(currentDate);
+    defaultEnd.setDate(defaultEnd.getDate() + 1);
+    document.getElementById('endDateInput').value = defaultEnd.toISOString().split('T')[0];
+    endDate = defaultEnd;
 
-function setFirebaseUrl(url) {
-  localStorage.setItem('mm_firebase_url', url);
-}
+    // Migrate any local picks to Firebase
+    migrateLocalPicks();
 
-function isFirebaseConnected() {
-  return !!firebaseDb;
-}
-
-function updateSyncBadge() {
-  const badge = document.getElementById('syncBadge');
-  if (isFirebaseConnected()) {
-    badge.textContent = 'Synced';
-    badge.className = 'sync-badge connected';
+    isFirstLoad = true;
+    loadCurrentView();
+    startAutoRefresh();
   } else {
-    badge.textContent = 'Local';
-    badge.className = 'sync-badge local';
-  }
-}
+    currentUser = null;
+    document.getElementById('authScreen').style.display = '';
+    document.getElementById('appContainer').style.display = 'none';
 
-function initFirebase(url) {
-  try {
-    // Clean up existing
-    if (firebaseListener && firebaseDb) {
-      const name = getUserName() || 'default';
-      firebaseDb.ref('picks/' + name).off('value', firebaseListener);
+    // Clean up listener
+    if (firebaseListener) {
+      firebaseListener();
       firebaseListener = null;
     }
-    if (firebase.apps.length) {
-      firebase.app().delete().then(() => {
-        doFirebaseInit(url);
-      });
-    } else {
-      doFirebaseInit(url);
+  }
+});
+
+document.getElementById('signInBtn').addEventListener('click', () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    console.error('Sign-in error:', err);
+    // Fallback to redirect for mobile
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+      auth.signInWithRedirect(provider);
     }
-  } catch (e) {
-    console.error('Firebase init error:', e);
-    firebaseDb = null;
-    updateSyncBadge();
+  });
+});
+
+document.getElementById('signOutBtn').addEventListener('click', () => {
+  auth.signOut();
+});
+
+function migrateLocalPicks() {
+  if (!currentUser) return;
+  // Check if there are any old localStorage picks to migrate
+  const oldKeys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('mm_picks_')) {
+      oldKeys.push(key);
+    }
   }
-}
+  if (oldKeys.length === 0) return;
 
-function doFirebaseInit(url) {
-  try {
-    const app = firebase.initializeApp({ databaseURL: url });
-    firebaseDb = firebase.database();
-    setFirebaseUrl(url);
-    setupFirebaseListener();
-    updateSyncBadge();
-    // Sync existing localStorage picks to Firebase
-    const localKey = `mm_picks_${getUserName() || 'default'}`;
-    try {
-      const localPicks = JSON.parse(localStorage.getItem(localKey) || '{}');
-      if (Object.keys(localPicks).length > 0 && Object.keys(picksCache).length === 0) {
-        // Push local picks to Firebase if Firebase is empty
-        const name = getUserName() || 'default';
-        firebaseDb.ref('picks/' + name).update(flattenPicks(localPicks));
-      }
-    } catch(e) {}
-  } catch(e) {
-    console.error('Firebase init failed:', e);
-    firebaseDb = null;
-    updateSyncBadge();
-  }
-}
+  // Only migrate if Firebase has no data yet
+  db.ref('picks/' + currentUser.uid).once('value', (snapshot) => {
+    if (snapshot.val()) return; // Already has data, skip
 
-function flattenPicks(picks) {
-  // Firebase doesn't store undefined/deleted keys well, so we set the whole object
-  return picks;
-}
+    // Merge all local picks
+    let merged = {};
+    oldKeys.forEach(key => {
+      try {
+        const local = JSON.parse(localStorage.getItem(key) || '{}');
+        Object.entries(local).forEach(([gameId, periods]) => {
+          if (!merged[gameId]) merged[gameId] = {};
+          Object.assign(merged[gameId], periods);
+        });
+      } catch(e) {}
+    });
 
-function setupFirebaseListener() {
-  if (!firebaseDb) return;
-  const name = getUserName() || 'default';
-
-  // Remove old listener
-  if (firebaseListener) {
-    firebaseDb.ref('picks/' + name).off('value', firebaseListener);
-  }
-
-  firebaseListener = firebaseDb.ref('picks/' + name).on('value', (snapshot) => {
-    picksCache = snapshot.val() || {};
-    // Also save to localStorage as backup
-    const localKey = `mm_picks_${name}`;
-    localStorage.setItem(localKey, JSON.stringify(picksCache));
-    // Re-render to show changes from other devices
-    if (!isFirstLoad) {
-      refresh();
+    if (Object.keys(merged).length > 0) {
+      db.ref('picks/' + currentUser.uid).set(merged);
     }
   });
 }
 
-function disconnectFirebase() {
-  if (firebaseListener && firebaseDb) {
-    const name = getUserName() || 'default';
-    firebaseDb.ref('picks/' + name).off('value', firebaseListener);
+// --- Firebase Data Layer ---
+function setupFirebaseListener() {
+  if (!currentUser) return;
+
+  // Remove old listener
+  if (firebaseListener) {
+    firebaseListener();
     firebaseListener = null;
   }
-  if (firebase.apps.length) {
-    firebase.app().delete();
-  }
-  firebaseDb = null;
-  localStorage.removeItem('mm_firebase_url');
-  updateSyncBadge();
-  updateSettingsStatus();
-  closeModal('settingsModal');
-}
 
-function connectFirebase() {
-  const url = document.getElementById('firebaseUrlInput').value.trim();
-  if (!url) { alert('Please enter a Firebase Database URL'); return; }
-  initFirebase(url);
-  closeModal('settingsModal');
-}
+  const ref = db.ref('picks/' + currentUser.uid);
+  const callback = ref.on('value', (snapshot) => {
+    picksCache = snapshot.val() || {};
+    if (!isFirstLoad) {
+      refresh();
+    }
+  });
 
-function updateSettingsStatus() {
-  const status = document.getElementById('settingsStatus');
-  if (isFirebaseConnected()) {
-    status.textContent = 'Connected — syncing in real-time across devices';
-    status.className = 'settings-status ok';
-  } else {
-    status.textContent = 'Not connected — using local storage only';
-    status.className = 'settings-status off';
-  }
-}
-
-function getPicksKey() {
-  return `mm_picks_${getUserName() || 'default'}`;
+  // Store unsubscribe function
+  firebaseListener = () => ref.off('value', callback);
 }
 
 function loadPicks() {
-  if (isFirebaseConnected()) {
-    return picksCache;
-  }
-  try {
-    return JSON.parse(localStorage.getItem(getPicksKey()) || '{}');
-  } catch { return {}; }
+  return picksCache;
 }
 
 function savePicks(picks) {
-  // Always save to localStorage as backup
-  localStorage.setItem(getPicksKey(), JSON.stringify(picks));
-
-  if (isFirebaseConnected()) {
-    const name = getUserName() || 'default';
-    firebaseDb.ref('picks/' + name).set(picks);
-    picksCache = picks;
-  }
+  if (!currentUser) return;
+  picksCache = picks;
+  db.ref('picks/' + currentUser.uid).set(picks);
 }
 
 function savePick(gameId, period, value) {
@@ -1059,13 +1050,11 @@ function saveSide(gameId, period, side) {
 }
 
 function getPick(gameId, period) {
-  const picks = loadPicks();
-  return picks[gameId]?.[period] ?? '';
+  return picksCache[gameId]?.[period] ?? '';
 }
 
 function getSide(gameId, period) {
-  const picks = loadPicks();
-  return picks[gameId]?.[period + '_side'] ?? '';
+  return picksCache[gameId]?.[period + '_side'] ?? '';
 }
 
 // --- ESPN API ---
@@ -1096,10 +1085,7 @@ async function fetchGames(gender, date) {
 }
 
 async function fetchAllGames(gender) {
-  const cacheKey = gender;
   const sport = gender === 'mens' ? 'mens-college-basketball' : 'womens-college-basketball';
-
-  // Fetch across tournament date range
   const dates = [];
   const d = new Date(TOURNAMENT_START);
   while (d <= TOURNAMENT_END) {
@@ -1107,7 +1093,6 @@ async function fetchAllGames(gender) {
     d.setDate(d.getDate() + 1);
   }
 
-  // Batch fetch in groups of 5
   const allGames = [];
   for (let i = 0; i < dates.length; i += 5) {
     const batch = dates.slice(i, i + 5);
@@ -1125,7 +1110,6 @@ async function fetchAllGames(gender) {
     results.forEach(games => allGames.push(...games));
   }
 
-  // Deduplicate by game id
   const seen = new Set();
   const unique = [];
   for (const game of allGames) {
@@ -1136,7 +1120,7 @@ async function fetchAllGames(gender) {
   }
 
   unique.sort((a, b) => new Date(a.date) - new Date(b.date));
-  allGamesCache[cacheKey] = unique;
+  allGamesCache[gender] = unique;
   return unique;
 }
 
@@ -1202,7 +1186,6 @@ function getStatusText(status) {
     const half = period <= 2 ? `${period}H` : `OT${period - 2}`;
     return `${half} ${clock}`;
   }
-  // Pre
   const d = new Date(status.type?.detail || '');
   if (!isNaN(d)) {
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -1213,14 +1196,10 @@ function getStatusText(status) {
 // --- Calculations ---
 function calcHalfScore(game, half) {
   if (half === '1h') {
-    const a = game.away.linescores[0] || 0;
-    const h = game.home.linescores[0] || 0;
-    return a + h;
+    return (game.away.linescores[0] || 0) + (game.home.linescores[0] || 0);
   }
   if (half === '2h') {
-    const a = game.away.linescores[1] || 0;
-    const h = game.home.linescores[1] || 0;
-    return a + h;
+    return (game.away.linescores[1] || 0) + (game.home.linescores[1] || 0);
   }
   if (half === 'full') {
     return game.away.score + game.home.score;
@@ -1259,7 +1238,6 @@ function getResult(line, actual, complete, inProgress) {
 
 // --- Rendering ---
 function renderSummary(games) {
-  const picks = loadPicks();
   let wins = 0, losses = 0, pushes = 0, total = 0;
   const byPeriod = { '1h': { w: 0, l: 0, p: 0 }, '2h': { w: 0, l: 0, p: 0 }, 'full': { w: 0, l: 0, p: 0 } };
 
@@ -1268,7 +1246,7 @@ function renderSummary(games) {
       const line = getPick(game.id, period);
       const side = getSide(game.id, period);
       if (line === '' || line === null || line === undefined) return;
-      if (!side) return; // need a side picked to count in record
+      if (!side) return;
       const actual = calcHalfScore(game, period);
       const complete = isHalfComplete(game, period);
       if (!complete) return;
@@ -1280,37 +1258,15 @@ function renderSummary(games) {
     });
   });
 
-  const html = `
-    <div class="stat-card">
-      <div class="stat-value">${total}</div>
-      <div class="stat-label">Settled Bets</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value over">${wins}</div>
-      <div class="stat-label">Wins</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value under">${losses}</div>
-      <div class="stat-label">Losses</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value push">${pushes}</div>
-      <div class="stat-label">Pushes</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${byPeriod['1h'].w}-${byPeriod['1h'].l}-${byPeriod['1h'].p}</div>
-      <div class="stat-label">1H Record</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${byPeriod['2h'].w}-${byPeriod['2h'].l}-${byPeriod['2h'].p}</div>
-      <div class="stat-label">2H Record</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${byPeriod['full'].w}-${byPeriod['full'].l}-${byPeriod['full'].p}</div>
-      <div class="stat-label">Full Record</div>
-    </div>
+  document.getElementById('summary').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Settled Bets</div></div>
+    <div class="stat-card"><div class="stat-value over">${wins}</div><div class="stat-label">Wins</div></div>
+    <div class="stat-card"><div class="stat-value under">${losses}</div><div class="stat-label">Losses</div></div>
+    <div class="stat-card"><div class="stat-value push">${pushes}</div><div class="stat-label">Pushes</div></div>
+    <div class="stat-card"><div class="stat-value">${byPeriod['1h'].w}-${byPeriod['1h'].l}-${byPeriod['1h'].p}</div><div class="stat-label">1H Record</div></div>
+    <div class="stat-card"><div class="stat-value">${byPeriod['2h'].w}-${byPeriod['2h'].l}-${byPeriod['2h'].p}</div><div class="stat-label">2H Record</div></div>
+    <div class="stat-card"><div class="stat-value">${byPeriod['full'].w}-${byPeriod['full'].l}-${byPeriod['full'].p}</div><div class="stat-label">Full Record</div></div>
   `;
-  document.getElementById('summary').innerHTML = html;
 }
 
 function renderGames(games) {
@@ -1323,7 +1279,6 @@ function renderGames(games) {
     return;
   }
 
-  // Group by round if in all view, otherwise just list
   let html = '';
   let lastRound = '';
 
@@ -1404,7 +1359,6 @@ function renderOUTable(game) {
     if (result && result !== 'pending' && line !== '' && line !== null && line !== undefined) {
       const isPacing = result.startsWith('pacing-');
       const baseResult = isPacing ? result.replace('pacing-', '') : result;
-      // If they picked a side, show WIN/LOSS instead of just OVER/UNDER
       if (side && !isPacing && baseResult !== 'push') {
         const won = side === baseResult;
         const wlLabel = won ? 'WIN' : 'LOSS';
@@ -1454,13 +1408,11 @@ function renderOUTable(game) {
     ${vegasHint}`;
 }
 
-// --- Interactions ---
+// --- Tracker View ---
 function renderTracker(games) {
-  // Build tracker summary totals across games passed in
-  const allGames = games;
   let totalWins = 0, totalLosses = 0, totalPushes = 0, totalInProgress = 0, totalPending = 0;
 
-  allGames.forEach(game => {
+  games.forEach(game => {
     ['1h', '2h', 'full'].forEach(period => {
       const line = getPick(game.id, period);
       const side = getSide(game.id, period);
@@ -1477,45 +1429,24 @@ function renderTracker(games) {
     });
   });
 
-  // Summary bar
   let html = `
     <div class="tracker-summary">
-      <div class="stat-card">
-        <div class="stat-value over">${totalWins}</div>
-        <div class="stat-label">Winners</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value under">${totalLosses}</div>
-        <div class="stat-label">Losers</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value push">${totalPushes}</div>
-        <div class="stat-label">Pushes</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" style="color:var(--live)">${totalInProgress}</div>
-        <div class="stat-label">In Progress</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${totalPending}</div>
-        <div class="stat-label">Pending</div>
-      </div>
+      <div class="stat-card"><div class="stat-value over">${totalWins}</div><div class="stat-label">Winners</div></div>
+      <div class="stat-card"><div class="stat-value under">${totalLosses}</div><div class="stat-label">Losers</div></div>
+      <div class="stat-card"><div class="stat-value push">${totalPushes}</div><div class="stat-label">Pushes</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--live)">${totalInProgress}</div><div class="stat-label">In Progress</div></div>
+      <div class="stat-card"><div class="stat-value">${totalPending}</div><div class="stat-label">Pending</div></div>
     </div>`;
 
-  // Filter to games that have at least one bet
-  const bettedGames = games.filter(game => {
-    return ['1h', '2h', 'full'].some(p => {
-      const line = getPick(game.id, p);
-      return line !== '' && line !== null && line !== undefined;
-    });
-  });
+  const bettedGames = games.filter(game => ['1h', '2h', 'full'].some(p => {
+    const line = getPick(game.id, p);
+    return line !== '' && line !== null && line !== undefined;
+  }));
 
-  const unbettedGames = games.filter(game => {
-    return !['1h', '2h', 'full'].some(p => {
-      const line = getPick(game.id, p);
-      return line !== '' && line !== null && line !== undefined;
-    });
-  });
+  const unbettedGames = games.filter(game => !['1h', '2h', 'full'].some(p => {
+    const line = getPick(game.id, p);
+    return line !== '' && line !== null && line !== undefined;
+  }));
 
   if (!bettedGames.length && !unbettedGames.length) {
     html += `<div class="no-games"><h3>No games on this date</h3><p>Navigate to a game day to see your bets.</p></div>`;
@@ -1524,7 +1455,7 @@ function renderTracker(games) {
   }
 
   if (!bettedGames.length) {
-    html += `<div class="no-games"><h3>No bets entered for this date</h3><p>Go to "By Date" view to enter your lines and pick O/U.</p></div>`;
+    html += `<div class="no-games"><h3>No bets entered for this date</h3><p>Go to "Input" view to enter your lines and pick O/U.</p></div>`;
     document.getElementById('gamesList').innerHTML = html;
     return;
   }
@@ -1575,11 +1506,9 @@ function renderTracker(games) {
       const showScore = game.state !== 'pre' && (period === 'full' || game.away.linescores.length > (period === '1h' ? 0 : 1));
       const { diff, result } = getResult(line, actual, complete, inProgress);
 
-      // Side display
-      const sideLabel = side ? side.toUpperCase() : '—';
+      const sideLabel = side ? side.toUpperCase() : '-';
       const sideClass = side || '';
 
-      // Diff display
       let diffHtml = '';
       if (diff !== null) {
         const sign = diff > 0 ? '+' : '';
@@ -1587,7 +1516,6 @@ function renderTracker(games) {
         diffHtml = `<div class="tracker-bet-diff diff-value ${cls}">${sign}${diff.toFixed(1)}</div>`;
       }
 
-      // Token
       let tokenHtml = '';
       if (result && result !== 'pending') {
         const isPacing = result.startsWith('pacing-');
@@ -1612,7 +1540,7 @@ function renderTracker(games) {
         <div class="tracker-bet">
           <div class="tracker-bet-label">${periodLabel}</div>
           <div class="tracker-bet-side ${sideClass}">${sideLabel} ${line}</div>
-          ${showScore ? `<div class="tracker-bet-actual">${actual}</div>` : '<div class="tracker-bet-actual">—</div>'}
+          ${showScore ? `<div class="tracker-bet-actual">${actual}</div>` : '<div class="tracker-bet-actual">-</div>'}
           ${diffHtml}
           ${tokenHtml}
         </div>`;
@@ -1620,7 +1548,6 @@ function renderTracker(games) {
     html += `</div></div>`;
   });
 
-  // Show unbetted games in a smaller section
   if (unbettedGames.length) {
     html += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">No Bets Entered</div>`;
     unbettedGames.forEach(game => {
@@ -1651,6 +1578,7 @@ function renderTracker(games) {
   document.getElementById('gamesList').innerHTML = html;
 }
 
+// --- Interactions ---
 function toggleGame(id) {
   const card = document.querySelector(`.game-card[data-id="${id}"]`);
   if (card) card.classList.toggle('expanded');
@@ -1696,7 +1624,6 @@ function onSideChange(btn) {
   const period = btn.dataset.period;
   const side = btn.dataset.side;
   const currentSide = getSide(gameId, period);
-  // Toggle: if already selected, deselect
   saveSide(gameId, period, currentSide === side ? '' : side);
   reRenderGameCard(gameId);
 }
@@ -1753,13 +1680,11 @@ async function fetchGamesByFilters() {
     const results = await Promise.all(fetches);
     results.forEach(games => allGames.push(...games));
   } else {
-    // All dates
     const fetches = genders.map(g => fetchAllGames(g).then(games => games.map(gm => ({ ...gm, gender: g }))));
     const results = await Promise.all(fetches);
     results.forEach(games => allGames.push(...games));
   }
 
-  // Deduplicate and sort
   const seen = new Set();
   allGames = allGames.filter(g => {
     if (seen.has(g.id)) return false;
@@ -1770,14 +1695,11 @@ async function fetchGamesByFilters() {
   return allGames;
 }
 
-let isFirstLoad = true;
-
 async function loadCurrentView() {
   if (isFirstLoad) {
     document.getElementById('gamesList').innerHTML = '<div class="loading">Loading games...</div>';
   }
 
-  // Show/hide controls based on state
   document.getElementById('dateNav').style.display = currentDateMode !== 'all' ? 'flex' : 'none';
   document.getElementById('dateEndPicker').style.display = currentDateMode === 'range' ? 'inline-flex' : 'none';
   document.getElementById('summary').style.display = currentTab === 'input' ? '' : 'none';
@@ -1801,33 +1723,28 @@ function updateRefreshInfo() {
   const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   document.getElementById('refreshInfo').textContent = `Updated ${timeStr}`;
 
-  // Check if any game is live
   const hasLive = Object.values(gamesData).some(games => games.some(g => g.state === 'in')) ||
     Object.values(allGamesCache).some(games => games.some(g => g.state === 'in'));
   document.getElementById('liveDot').style.display = hasLive ? 'inline-block' : 'none';
 }
 
 async function refresh() {
-  // Save expanded state
   const expandedIds = new Set();
   document.querySelectorAll('.game-card.expanded').forEach(card => {
     expandedIds.add(card.dataset.id);
   });
 
-  // Save input focus
   const focused = document.activeElement;
   const focusedGame = focused?.dataset?.game;
   const focusedPeriod = focused?.dataset?.period;
 
   await loadCurrentView();
 
-  // Restore expanded state
   expandedIds.forEach(id => {
     const card = document.querySelector(`.game-card[data-id="${id}"]`);
     if (card) card.classList.add('expanded');
   });
 
-  // Restore focus
   if (focusedGame && focusedPeriod) {
     const input = document.querySelector(`input[data-game="${focusedGame}"][data-period="${focusedPeriod}"]`);
     if (input) input.focus();
@@ -1846,7 +1763,6 @@ function renderTicker(count) {
 }
 
 function startAutoRefresh() {
-  if (refreshTimer) clearInterval(refreshTimer);
   if (tickerTimer) clearInterval(tickerTimer);
 
   tickerCount = 0;
@@ -1863,12 +1779,6 @@ function startAutoRefresh() {
 }
 
 // --- Event Listeners ---
-document.getElementById('userName').value = getUserName();
-document.getElementById('userName').addEventListener('input', function() {
-  setUserName(this.value);
-});
-
-// Main tab toggle
 document.querySelectorAll('#mainTabs .toggle-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('#mainTabs .toggle-btn').forEach(b => b.classList.remove('active'));
@@ -1878,7 +1788,6 @@ document.querySelectorAll('#mainTabs .toggle-btn').forEach(btn => {
   });
 });
 
-// Gender toggle (shared)
 document.querySelectorAll('#genderToggle .toggle-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('#genderToggle .toggle-btn').forEach(b => b.classList.remove('active'));
@@ -1888,7 +1797,6 @@ document.querySelectorAll('#genderToggle .toggle-btn').forEach(btn => {
   });
 });
 
-// Date mode toggle (shared)
 document.querySelectorAll('#dateMode .toggle-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('#dateMode .toggle-btn').forEach(b => b.classList.remove('active'));
@@ -1898,7 +1806,6 @@ document.querySelectorAll('#dateMode .toggle-btn').forEach(btn => {
   });
 });
 
-// End date input for range mode
 document.getElementById('endDateInput').addEventListener('change', function() {
   endDate = new Date(this.value + 'T12:00:00');
   isFirstLoad = true; loadCurrentView();
@@ -1927,7 +1834,7 @@ document.getElementById('expandAll').addEventListener('click', () => {
 
 document.getElementById('exportBtn').addEventListener('click', () => {
   const data = {
-    name: getUserName(),
+    name: currentUser?.displayName || 'Unknown',
     picks: loadPicks(),
     exported: new Date().toISOString(),
   };
@@ -1959,12 +1866,10 @@ function doImport() {
     const data = JSON.parse(document.getElementById('importData').value);
     if (!data.picks) throw new Error('Invalid format');
     const name = data.name || 'Imported';
-    // Merge into current picks (imported picks don't overwrite existing)
     const currentPicks = loadPicks();
     Object.entries(data.picks).forEach(([gameId, periods]) => {
       if (!currentPicks[gameId]) currentPicks[gameId] = {};
       Object.entries(periods).forEach(([period, value]) => {
-        // Only import if user doesn't have a pick for this
         if (currentPicks[gameId][period] === undefined) {
           currentPicks[gameId][period] = value;
         }
@@ -1979,36 +1884,11 @@ function doImport() {
   }
 }
 
-// Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.classList.remove('active');
   });
 });
-
-// Settings button
-document.getElementById('settingsBtn').addEventListener('click', () => {
-  document.getElementById('firebaseUrlInput').value = getFirebaseUrl();
-  updateSettingsStatus();
-  document.getElementById('settingsModal').classList.add('active');
-});
-
-// --- Init ---
-document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
-// Set default end date for range picker
-const defaultEnd = new Date(currentDate);
-defaultEnd.setDate(defaultEnd.getDate() + 1);
-document.getElementById('endDateInput').value = defaultEnd.toISOString().split('T')[0];
-endDate = defaultEnd;
-
-// Auto-connect to Firebase if URL was previously saved
-const savedFirebaseUrl = getFirebaseUrl();
-if (savedFirebaseUrl) {
-  initFirebase(savedFirebaseUrl);
-}
-
-loadCurrentView();
-startAutoRefresh();
 </script>
 </body>
 </html>
