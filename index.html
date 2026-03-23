@@ -510,7 +510,67 @@ body {
 .result-badge.win { background: rgba(34,197,94,0.15); color: var(--over); }
 .result-badge.loss { background: rgba(239,68,68,0.15); color: var(--under); }
 
-/* Live Tracker View */
+/* Slider flash animation */
+@keyframes sliderFlash {
+  0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.6); }
+  30% { box-shadow: 0 0 12px 4px rgba(249,115,22,0.5); }
+  100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+}
+
+.slider-track.flash {
+  animation: sliderFlash 0.6s ease-out;
+}
+
+/* Win crown on slider */
+.slider-crown {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  z-index: 3;
+  animation: crownBounce 0.6s ease;
+}
+
+@keyframes crownBounce {
+  0% { transform: translateX(-50%) scale(0) rotate(-20deg); }
+  50% { transform: translateX(-50%) scale(1.3) rotate(10deg); }
+  100% { transform: translateX(-50%) scale(1) rotate(0deg); }
+}
+
+/* Fireworks */
+.fireworks-container {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  border-radius: 12px;
+}
+
+.tracker-card { position: relative; overflow: hidden; }
+.tracker-card > *:not(.fireworks-container) { position: relative; z-index: 1; }
+
+.firework-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: fireworkBurst 1s ease-out forwards;
+}
+
+@keyframes fireworkBurst {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Win glow on card */
+.tracker-card.win-card {
+  border-color: var(--over);
+  box-shadow: 0 0 15px rgba(34,197,94,0.15);
+}
+
+/* Bet Tracker View */
 .tracker-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
@@ -521,107 +581,94 @@ body {
 .tracker-summary .stat-card { padding: 10px; }
 .tracker-summary .stat-value { font-size: 1.2rem; }
 
-.tracker-game {
+.tracker-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 10px;
-  overflow: hidden;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
 }
 
-.tracker-game.has-live { border-color: var(--live); }
+.tracker-card.is-live { border-color: rgba(255,255,255,0.3); }
+.tracker-card-dim { opacity: 0.35; }
 
-.tracker-game-header {
+/* Delay control */
+.delay-control {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--card-hover);
+  gap: 2px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 2px;
 }
 
-.tracker-matchup {
+.delay-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.delay-btn:hover { background: var(--border); color: var(--text); }
+
+.delay-value {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 22px;
+  text-align: center;
+}
+
+/* Status row */
+.tracker-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.tracker-status-left {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
 }
 
-.tracker-matchup img { width: 16px; height: 16px; border-radius: 3px; }
-
-.tracker-score {
-  font-size: 0.85rem;
+.tracker-period-label {
+  font-size: 0.68rem;
   font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .tracker-status {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .tracker-status.live { color: var(--live); }
 .tracker-status.final { color: var(--text-muted); }
 .tracker-status.pre { color: var(--text-muted); }
 
-.tracker-bets {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-}
-
-.tracker-bet {
-  padding: 8px 10px;
-  text-align: center;
-  border-right: 1px solid var(--border);
-  position: relative;
-}
-
-.tracker-bet:last-child { border-right: none; }
-
-.tracker-bet-label {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-
-.tracker-bet-side {
-  font-size: 0.65rem;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.tracker-bet-side.over { color: var(--over); }
-.tracker-bet-side.under { color: var(--under); }
-
-.tracker-bet-line {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-bottom: 2px;
-}
-
-.tracker-bet-actual {
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.tracker-bet-diff {
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .tracker-token {
   display: inline-block;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: 4px;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .tracker-token.win { background: rgba(34,197,94,0.2); color: var(--over); }
@@ -630,10 +677,174 @@ body {
 .tracker-token.live { background: rgba(239,68,68,0.15); color: var(--live); }
 .tracker-token.pending { background: rgba(139,141,151,0.1); color: var(--text-muted); }
 
-.tracker-no-bet {
+/* Main layout: team | bar | team */
+.tracker-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tracker-team-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 50px;
+}
+
+.tracker-team-side img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.tracker-team-side .t-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.tracker-team-side .t-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* Center bar section */
+.tracker-bar-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.tracker-bet-line {
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.tracker-bet-tag {
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 4px 16px;
+  border-radius: 6px;
+  display: inline-block;
+  letter-spacing: 0.5px;
+}
+
+.tracker-bet-tag.over, .tracker-bet-tag.under { background: rgba(255,255,255,0.08); color: var(--text); }
+.tracker-bet-tag.over.won { background: rgba(34,197,94,0.2); color: var(--over); }
+.tracker-bet-tag.under.won { background: rgba(34,197,94,0.2); color: var(--over); }
+.tracker-bet-tag.over.lost { background: rgba(239,68,68,0.2); color: var(--under); }
+.tracker-bet-tag.under.lost { background: rgba(239,68,68,0.2); color: var(--under); }
+
+
+/* The slider bar */
+.slider-track {
+  position: relative;
+  height: 30px;
+  background: var(--input-bg);
+  border-radius: 15px;
+  overflow: visible;
+  border: 1px solid var(--border);
+}
+
+.slider-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 15px 0 0 15px;
+  transition: width 0.4s ease, background 0.3s;
+  min-width: 0;
+}
+
+.slider-fill.under-line { background: linear-gradient(90deg, #1a1d27, rgba(255,255,255,0.12)); }
+.slider-fill.at-line { background: var(--push); border-radius: 15px; }
+.slider-fill.over-line-win { background: linear-gradient(90deg, #22c55e30, #22c55e); border-radius: 15px; }
+.slider-fill.over-line-loss { background: linear-gradient(90deg, #ef444430, #ef4444); border-radius: 15px; }
+.slider-fill.over-line-neutral { background: linear-gradient(90deg, #1a1d27, rgba(255,255,255,0.15)); border-radius: 15px; }
+
+.slider-ball {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  z-index: 2;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  transition: left 0.4s ease;
+}
+
+.slider-score-inside {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  z-index: 3;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  transition: left 0.4s ease;
+}
+
+.slider-line-marker {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--text);
+  transform: translateX(-50%);
+  z-index: 1;
+  border-radius: 1px;
+}
+
+/* Bottom info under bar */
+.tracker-bar-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  padding: 0 2px;
+}
+
+.tracker-bar-score {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 20px;
+}
+
+.tracker-bar-diff {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.tracker-bar-line-num {
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+.tracker-no-bet-card {
+  font-size: 0.72rem;
+  color: var(--text-muted);
   font-style: italic;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.tracker-gender-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+@media (max-width: 600px) {
+  .tracker-team-side img { width: 28px; height: 28px; }
+  .tracker-team-side .t-name { font-size: 0.65rem; }
+  .tracker-team-side .t-score { font-size: 0.9rem; }
+  .tracker-bar-row { gap: 8px; }
+  .tracker-card { padding: 10px 12px; }
 }
 
 .sync-badge {
@@ -896,6 +1107,11 @@ let currentUser = null;
 let picksCache = {};
 let firebaseListener = null;
 let isFirstLoad = true;
+let localChangeInProgress = false;
+let prevScores = {};
+let winTimestamps = {};
+let gameDelays = {}; // Per-game delay in seconds { gameId: 45 }
+let gameDataHistory = {}; // { gameId: [{timestamp, data}, ...] } for delayed playback
 
 const TOURNAMENT_START = new Date('2026-03-17');
 const TOURNAMENT_END = new Date('2026-04-07');
@@ -1007,7 +1223,7 @@ function setupFirebaseListener() {
   const ref = db.ref('picks/' + currentUser.uid);
   const callback = ref.on('value', (snapshot) => {
     picksCache = snapshot.val() || {};
-    if (!isFirstLoad) {
+    if (!isFirstLoad && !localChangeInProgress) {
       refresh();
     }
   });
@@ -1022,8 +1238,11 @@ function loadPicks() {
 
 function savePicks(picks) {
   if (!currentUser) return;
+  localChangeInProgress = true;
   picksCache = picks;
-  db.ref('picks/' + currentUser.uid).set(picks);
+  db.ref('picks/' + currentUser.uid).set(picks).then(() => {
+    localChangeInProgress = false;
+  });
 }
 
 function savePick(gameId, period, value) {
@@ -1199,12 +1418,17 @@ function calcHalfScore(game, half) {
     return (game.away.linescores[0] || 0) + (game.home.linescores[0] || 0);
   }
   if (half === '2h') {
-    return (game.away.linescores[1] || 0) + (game.home.linescores[1] || 0);
+    // 2H bet is always total game score
+    return game.away.score + game.home.score;
   }
   if (half === 'full') {
     return game.away.score + game.home.score;
   }
   return 0;
+}
+
+function getFirstHalfScore(game) {
+  return (game.away.linescores[0] || 0) + (game.home.linescores[0] || 0);
 }
 
 function isHalfComplete(game, half) {
@@ -1382,7 +1606,7 @@ function renderOUTable(game) {
       <tr>
         <td class="period-label">${label}</td>
         <td>${sideHtml}</td>
-        <td><input class="ou-input" type="number" step="0.5" value="${line}" placeholder="${key === 'full' && game.vegasOU ? game.vegasOU : '—'}" data-game="${game.id}" data-period="${key}" onchange="onPickChange(this)" onblur="onPickChange(this)"></td>
+        <td><input class="ou-input" type="number" step="0.5" value="${line}" placeholder="${key === 'full' && game.vegasOU ? game.vegasOU : '—'}" data-game="${game.id}" data-period="${key}" onblur="onPickChange(this)"></td>
         <td>${showScore ? actual : '-'}</td>
         <td>${diffHtml}</td>
         <td>${resultHtml}</td>
@@ -1409,6 +1633,98 @@ function renderOUTable(game) {
 }
 
 // --- Tracker View ---
+// Determine which period to show for a game (one at a time, with swap logic)
+function getActivePeriod(game) {
+  // Pre-game: show full game bet if exists, else 1h
+  if (game.state === 'pre') {
+    if (hasBet(game.id, 'full')) return 'full';
+    if (hasBet(game.id, '1h')) return '1h';
+    if (hasBet(game.id, '2h')) return '2h';
+    return 'full';
+  }
+
+  // 1st half in progress
+  if (game.state === 'in' && game.period === 1) {
+    // Check clock — if under 3:00, swap to show 2H preview if bet exists
+    const clockParts = (game.clock || '').split(':');
+    const minutes = parseInt(clockParts[0]) || 0;
+    if (minutes < 3 && hasBet(game.id, '2h')) return '2h';
+    if (hasBet(game.id, '1h')) return '1h';
+    if (hasBet(game.id, 'full')) return 'full';
+    return '1h';
+  }
+
+  // 2nd half / OT in progress
+  if (game.state === 'in' && game.period >= 2) {
+    if (hasBet(game.id, '2h')) return '2h';
+    if (hasBet(game.id, 'full')) return 'full';
+    return '2h';
+  }
+
+  // Final: show full game
+  if (game.state === 'post') {
+    if (hasBet(game.id, 'full')) return 'full';
+    if (hasBet(game.id, '2h')) return '2h';
+    if (hasBet(game.id, '1h')) return '1h';
+    return 'full';
+  }
+
+  return 'full';
+}
+
+function hasBet(gameId, period) {
+  const line = getPick(gameId, period);
+  return line !== '' && line !== null && line !== undefined;
+}
+
+function renderSlider(score, line, side, result, gameId, startFrom, isWin, isLoss) {
+  if (line === '' || line === null || line === undefined) return '';
+
+  const lineNum = parseFloat(line);
+  const start = startFrom || 0;
+  const range = lineNum - start;
+  const progress = score - start;
+
+  const pct = range > 0 ? Math.min((progress / range) * 100, 100) : (score >= lineNum ? 100 : 0);
+  const isOver = score > lineNum;
+  const isAt = score === lineNum;
+
+  let fillClass = 'under-line';
+  if (isAt) fillClass = 'at-line';
+  else if (isOver) {
+    // Only color on settled win/loss
+    if (isWin) fillClass = 'over-line-win';
+    else if (isLoss) fillClass = 'over-line-loss';
+    else fillClass = 'over-line-neutral';
+  }
+
+  const ballPct = Math.min(pct, 95);
+  const diff = score - lineNum;
+  const sign = diff > 0 ? '+' : '';
+  const diffClass = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
+
+  const crownHtml = isWin ? `<div class="slider-crown">👑</div>` : '';
+
+  // Diff is white until settled (win=green, loss=red)
+  let diffColorClass = '';
+  if (isWin) diffColorClass = 'over';
+  else if (isLoss) diffColorClass = 'under';
+
+  return `
+    <div class="slider-track" data-game-id="${gameId || ''}">
+      <div class="slider-fill ${fillClass}" style="width:${pct}%"></div>
+      <div class="slider-line-marker" style="right:0"></div>
+      <div class="slider-ball" style="left:${ballPct}%">🏀</div>
+      <div class="slider-score-inside" style="left:${ballPct}%">${score}</div>
+      ${crownHtml}
+    </div>
+    <div class="tracker-bar-info">
+      <span class="tracker-bar-score">${start > 0 ? start : '0'}</span>
+      <span class="tracker-bar-diff diff-value ${diffColorClass}">${sign}${diff.toFixed(1)}</span>
+      <span class="tracker-bar-line-num">${lineNum}</span>
+    </div>`;
+}
+
 function renderTracker(games) {
   let totalWins = 0, totalLosses = 0, totalPushes = 0, totalInProgress = 0, totalPending = 0;
 
@@ -1438,144 +1754,440 @@ function renderTracker(games) {
       <div class="stat-card"><div class="stat-value">${totalPending}</div><div class="stat-label">Pending</div></div>
     </div>`;
 
-  const bettedGames = games.filter(game => ['1h', '2h', 'full'].some(p => {
-    const line = getPick(game.id, p);
-    return line !== '' && line !== null && line !== undefined;
-  }));
+  const allBetted = games.filter(game => ['1h', '2h', 'full'].some(p => hasBet(game.id, p)));
+  const unbettedGames = games.filter(game => !['1h', '2h', 'full'].some(p => hasBet(game.id, p)));
 
-  const unbettedGames = games.filter(game => !['1h', '2h', 'full'].some(p => {
-    const line = getPick(game.id, p);
-    return line !== '' && line !== null && line !== undefined;
-  }));
-
-  if (!bettedGames.length && !unbettedGames.length) {
+  if (!allBetted.length && !unbettedGames.length) {
     html += `<div class="no-games"><h3>No games on this date</h3><p>Navigate to a game day to see your bets.</p></div>`;
     document.getElementById('gamesList').innerHTML = html;
     return;
   }
 
-  if (!bettedGames.length) {
+  if (!allBetted.length) {
     html += `<div class="no-games"><h3>No bets entered for this date</h3><p>Go to "Input" view to enter your lines and pick O/U.</p></div>`;
     document.getElementById('gamesList').innerHTML = html;
     return;
   }
 
+  // Categorize games and sort
+  const now = Date.now();
+  const settledGames = []; // wins/losses with 1min+ elapsed
+  const activeGames = []; // live, pre, or recently settled (<1min)
+
+  allBetted.forEach(game => {
+    const activePeriod = getActivePeriod(game);
+    const line = getPick(game.id, activePeriod);
+    const side = getSide(game.id, activePeriod);
+    const actual = calcHalfScore(game, activePeriod);
+    const complete = isHalfComplete(game, activePeriod);
+    const { result } = getResult(line, actual, complete, false);
+    const isSettled = complete && result && result !== 'pending' && !result.startsWith('pacing-');
+
+    if (isSettled) {
+      // Check if win was recorded recently (within 60s)
+      const winKey = `${game.id}_${activePeriod}_settled`;
+      if (!winTimestamps[winKey]) {
+        winTimestamps[winKey] = now;
+      }
+      const elapsed = now - winTimestamps[winKey];
+      if (elapsed < 60000) {
+        activeGames.push(game); // Keep at top for 1 minute
+      } else {
+        settledGames.push(game); // Push down
+      }
+    } else {
+      activeGames.push(game);
+    }
+  });
+
+  // Sort active games: closest to finishing at top
+  // Priority: live games sorted by how close to their line, then pre-game
+  activeGames.sort((a, b) => {
+    // Live games first
+    const aLive = a.state === 'in' ? 0 : a.state === 'post' ? 1 : 2;
+    const bLive = b.state === 'in' ? 0 : b.state === 'post' ? 1 : 2;
+    if (aLive !== bLive) return aLive - bLive;
+
+    // Among live games, sort by % of line completed (highest first = closest to finish)
+    if (a.state === 'in' && b.state === 'in') {
+      const aPeriod = getActivePeriod(a);
+      const bPeriod = getActivePeriod(b);
+      const aLine = parseFloat(getPick(a.id, aPeriod)) || 999;
+      const bLine = parseFloat(getPick(b.id, bPeriod)) || 999;
+      const aScore = calcHalfScore(a, aPeriod);
+      const bScore = calcHalfScore(b, bPeriod);
+      const aPct = aScore / aLine;
+      const bPct = bScore / bLine;
+      return bPct - aPct; // Higher % first
+    }
+
+    return 0;
+  });
+
+  const bettedGames = [...activeGames];
+
   bettedGames.forEach(game => {
     const isLive = game.state === 'in';
     const isFinal = game.state === 'post';
     const statusClass = isLive ? 'live' : isFinal ? 'final' : 'pre';
-    const hasLiveBet = isLive ? 'has-live' : '';
 
     const genderBadge = currentGender === 'both' && game.gender
-      ? `<span style="font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:3px;background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'};margin-right:4px;">${game.gender === 'mens' ? 'M' : 'W'}</span>`
-      : '';
-    const dateLabel = currentDateMode !== 'single'
-      ? `<span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px;">${formatDateDisplay(new Date(game.date))}</span>`
+      ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
       : '';
 
-    html += `<div class="tracker-game ${hasLiveBet}">`;
-    html += `<div class="tracker-game-header">
-      <div class="tracker-matchup">
+    const activePeriod = getActivePeriod(game);
+    const periodLabel = activePeriod === '1h' ? '1ST HALF' : activePeriod === '2h' ? '2ND HALF' : 'FULL GAME';
+    const line = getPick(game.id, activePeriod);
+    const side = getSide(game.id, activePeriod);
+    const actual = calcHalfScore(game, activePeriod);
+    const complete = isHalfComplete(game, activePeriod);
+    const inProgress = isHalfInProgress(game, activePeriod);
+    const showScore = game.state !== 'pre' && (activePeriod === 'full' || game.away.linescores.length > (activePeriod === '1h' ? 0 : 1));
+    const scoreToShow = showScore ? actual : 0;
+    const { diff, result } = getResult(line, actual, complete, inProgress);
+
+    const sideLabel = side ? (side === 'over' ? 'OVER' : 'UNDER') : '';
+    const sideClass = side || '';
+
+    // Token
+    let tokenHtml = '';
+    if (result && result !== 'pending') {
+      const isPacing = result.startsWith('pacing-');
+      const baseResult = isPacing ? result.replace('pacing-', '') : result;
+      if (isPacing) tokenHtml = `<span class="tracker-token live">LIVE</span>`;
+      else if (baseResult === 'push') tokenHtml = `<span class="tracker-token push">PUSH</span>`;
+      else if (side) {
+        tokenHtml = side === baseResult
+          ? `<span class="tracker-token win">WIN</span>`
+          : `<span class="tracker-token loss">LOSS</span>`;
+      } else tokenHtml = `<span class="tracker-token ${baseResult}">${baseResult.toUpperCase()}</span>`;
+    } else if (game.state === 'pre') {
+      tokenHtml = `<span class="tracker-token pending">PRE</span>`;
+    }
+
+    // Determine if this bet is a win (for crown + fireworks)
+    const isWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side && side === result;
+    const isLoss = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side && side !== result;
+
+    const dateLabel = currentDateMode !== 'single'
+      ? `<span style="font-size:0.6rem;color:var(--text-muted)">${formatDateDisplay(new Date(game.date))}</span>`
+      : '';
+
+    const cardClasses = [
+      'tracker-card',
+      isLive ? 'is-live' : '',
+      isWin ? 'win-card' : '',
+    ].filter(Boolean).join(' ');
+
+    html += `<div class="${cardClasses}" data-game-id="${game.id}">`;
+    if (isWin) {
+      html += `<div class="fireworks-container" id="fw-${game.id}"></div>`;
+    }
+
+    // Status row: period, status, token
+    const currentDelay = gameDelays[game.id] || 0;
+    const delayHtml = isLive ? `<div class="delay-control">
+      <button class="delay-btn" onclick="adjustDelay('${game.id}', -5)">−</button>
+      <span class="delay-value">${currentDelay > 0 ? currentDelay + 's' : '⏱'}</span>
+      <button class="delay-btn" onclick="adjustDelay('${game.id}', 5)">+</button>
+    </div>` : '';
+
+    html += `<div class="tracker-status-row">
+      <div class="tracker-status-left">
         ${genderBadge}
-        ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
-        <span>${game.away.seed ? `(${game.away.seed}) ` : ''}${game.away.abbreviation || game.away.name}</span>
-        ${game.state !== 'pre' ? `<span class="tracker-score">${game.away.score}</span>` : ''}
-        <span style="color:var(--text-muted);margin:0 4px;">vs</span>
-        ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
-        <span>${game.home.seed ? `(${game.home.seed}) ` : ''}${game.home.abbreviation || game.home.name}</span>
-        ${game.state !== 'pre' ? `<span class="tracker-score">${game.home.score}</span>` : ''}
+        <span class="tracker-period-label">${periodLabel}</span>
+        <span class="tracker-status ${statusClass}">${isLive ? '● ' : ''}${game.statusText}</span>
         ${dateLabel}
       </div>
-      <span class="tracker-status ${statusClass}">${isLive ? '● ' : ''}${game.statusText}</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        ${delayHtml}
+        ${tokenHtml}
+      </div>
     </div>`;
 
-    html += `<div class="tracker-bets">`;
-    ['1h', '2h', 'full'].forEach(period => {
-      const periodLabel = period === '1h' ? '1st Half' : period === '2h' ? '2nd Half' : 'Full Game';
-      const line = getPick(game.id, period);
-      const side = getSide(game.id, period);
+    // Main layout: AWAY team | bar | HOME team
+    if (line !== '' && line !== null && line !== undefined) {
+      html += `<div class="tracker-bar-row">
+        <div class="tracker-team-side">
+          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="t-name">${game.away.abbreviation || game.away.name}</span>
+          ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
+        </div>
+        <div class="tracker-bar-center">
+          ${sideLabel ? `<div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss ? ' lost' : ''}">${sideLabel} ${line}</span></div>` : ''}
+          ${(() => {
+            if (!showScore) return `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`;
+            // For 2H, slider starts at the 1H score (already locked in)
+            const sliderStart = activePeriod === '2h' ? getFirstHalfScore(game) : 0;
+            return renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss);
+          })()}
+        </div>
+        <div class="tracker-team-side">
+          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="t-name">${game.home.abbreviation || game.home.name}</span>
+          ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="tracker-bar-row">
+        <div class="tracker-team-side">
+          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="t-name">${game.away.abbreviation || game.away.name}</span>
+        </div>
+        <div class="tracker-bar-center">
+          <div class="tracker-no-bet-card">No bet for this period</div>
+        </div>
+        <div class="tracker-team-side">
+          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="t-name">${game.home.abbreviation || game.home.name}</span>
+        </div>
+      </div>`;
+    }
 
-      if (line === '' || line === null || line === undefined) {
-        html += `<div class="tracker-bet"><div class="tracker-bet-label">${periodLabel}</div><div class="tracker-no-bet">No bet</div></div>`;
-        return;
-      }
-
-      const actual = calcHalfScore(game, period);
-      const complete = isHalfComplete(game, period);
-      const inProgress = isHalfInProgress(game, period);
-      const showScore = game.state !== 'pre' && (period === 'full' || game.away.linescores.length > (period === '1h' ? 0 : 1));
-      const { diff, result } = getResult(line, actual, complete, inProgress);
-
-      const sideLabel = side ? side.toUpperCase() : '-';
-      const sideClass = side || '';
-
-      let diffHtml = '';
-      if (diff !== null) {
-        const sign = diff > 0 ? '+' : '';
-        const cls = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
-        diffHtml = `<div class="tracker-bet-diff diff-value ${cls}">${sign}${diff.toFixed(1)}</div>`;
-      }
-
-      let tokenHtml = '';
-      if (result && result !== 'pending') {
-        const isPacing = result.startsWith('pacing-');
-        const baseResult = isPacing ? result.replace('pacing-', '') : result;
-        if (isPacing) {
-          tokenHtml = `<span class="tracker-token live">LIVE</span>`;
-        } else if (baseResult === 'push') {
-          tokenHtml = `<span class="tracker-token push">PUSH</span>`;
-        } else if (side) {
-          const won = side === baseResult;
-          tokenHtml = won
-            ? `<span class="tracker-token win">W</span>`
-            : `<span class="tracker-token loss">L</span>`;
-        } else {
-          tokenHtml = `<span class="tracker-token ${baseResult}">${baseResult.toUpperCase()}</span>`;
-        }
-      } else if (game.state === 'pre') {
-        tokenHtml = `<span class="tracker-token pending">PRE</span>`;
-      }
-
-      html += `
-        <div class="tracker-bet">
-          <div class="tracker-bet-label">${periodLabel}</div>
-          <div class="tracker-bet-side ${sideClass}">${sideLabel} ${line}</div>
-          ${showScore ? `<div class="tracker-bet-actual">${actual}</div>` : '<div class="tracker-bet-actual">-</div>'}
-          ${diffHtml}
-          ${tokenHtml}
-        </div>`;
-    });
-    html += `</div></div>`;
+    html += `</div>`;
   });
 
+  // Unbetted games
   if (unbettedGames.length) {
     html += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">No Bets Entered</div>`;
     unbettedGames.forEach(game => {
       const statusClass = game.state === 'in' ? 'live' : game.state === 'post' ? 'final' : 'pre';
       const gb = currentGender === 'both' && game.gender
-        ? `<span style="font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:3px;background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'};margin-right:4px;">${game.gender === 'mens' ? 'M' : 'W'}</span>`
+        ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
         : '';
-      const dl = currentDateMode !== 'single'
-        ? `<span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px;">${formatDateDisplay(new Date(game.date))}</span>`
-        : '';
-      html += `<div class="tracker-game" style="opacity:0.5">
-        <div class="tracker-game-header">
-          <div class="tracker-matchup">
-            ${gb}
-            <span>${game.away.seed ? `(${game.away.seed}) ` : ''}${game.away.abbreviation || game.away.name}</span>
-            ${game.state !== 'pre' ? `<span class="tracker-score">${game.away.score}</span>` : ''}
-            <span style="color:var(--text-muted);margin:0 4px;">vs</span>
-            <span>${game.home.seed ? `(${game.home.seed}) ` : ''}${game.home.abbreviation || game.home.name}</span>
-            ${game.state !== 'pre' ? `<span class="tracker-score">${game.home.score}</span>` : ''}
-            ${dl}
+      html += `<div class="tracker-card tracker-card-dim">
+        <div class="tracker-bar-row">
+          <div class="tracker-team-side">
+            ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+            <span class="t-name">${game.away.abbreviation || game.away.name}</span>
+            ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
           </div>
-          <span class="tracker-status ${statusClass}">${game.state === 'in' ? '● ' : ''}${game.statusText}</span>
+          <div class="tracker-bar-center" style="text-align:center;">
+            ${gb}
+            <span class="tracker-status ${statusClass}">${game.state === 'in' ? '● ' : ''}${game.statusText}</span>
+          </div>
+          <div class="tracker-team-side">
+            ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+            <span class="t-name">${game.home.abbreviation || game.home.name}</span>
+            ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Settled games section (pushed down after 1 min)
+  if (settledGames.length) {
+    html += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">Settled</div>`;
+    settledGames.forEach(game => {
+      const activePeriod = getActivePeriod(game);
+      const line = getPick(game.id, activePeriod);
+      const side = getSide(game.id, activePeriod);
+      const actual = calcHalfScore(game, activePeriod);
+      const complete = isHalfComplete(game, activePeriod);
+      const { diff, result } = getResult(line, actual, complete, false);
+      const isWin = result && result !== 'push' && side && side === result;
+      const isLoss = result && result !== 'push' && side && side !== result;
+      const sideLabel = side ? (side === 'over' ? 'OVER' : 'UNDER') : '';
+
+      let tokenHtml = '';
+      if (result === 'push') tokenHtml = `<span class="tracker-token push">PUSH</span>`;
+      else if (isWin) tokenHtml = `<span class="tracker-token win">WIN</span>`;
+      else if (isLoss) tokenHtml = `<span class="tracker-token loss">LOSS</span>`;
+
+      const diffSign = diff > 0 ? '+' : '';
+      const diffClass = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
+
+      const gb = currentGender === 'both' && game.gender
+        ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
+        : '';
+
+      html += `<div class="tracker-card" style="opacity:0.7;">
+        <div class="tracker-bar-row">
+          <div class="tracker-team-side">
+            ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+            <span class="t-name">${game.away.abbreviation || game.away.name}</span>
+            <span class="t-score">${game.away.score}</span>
+          </div>
+          <div class="tracker-bar-center" style="text-align:center;">
+            ${gb}
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);">Final ${actual}</div>
+            <div style="font-size:0.72rem;font-weight:700;" class="${side}">${sideLabel} ${line}</div>
+            <div class="diff-value ${diffClass}" style="font-size:0.9rem;font-weight:800;">${diffSign}${diff !== null ? diff.toFixed(1) : ''}</div>
+            ${tokenHtml}
+          </div>
+          <div class="tracker-team-side">
+            ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+            <span class="t-name">${game.home.abbreviation || game.home.name}</span>
+            <span class="t-score">${game.home.score}</span>
+          </div>
         </div>
       </div>`;
     });
   }
 
   document.getElementById('gamesList').innerHTML = html;
+
+  // Flash detection: compare current scores to previous and trigger animation
+  const newScores = {};
+  games.forEach(game => {
+    const total = game.away.score + game.home.score;
+    newScores[game.id] = total;
+  });
+
+  // Find games where score changed and trigger flash
+  Object.keys(newScores).forEach(gameId => {
+    if (prevScores[gameId] !== undefined && prevScores[gameId] !== newScores[gameId]) {
+      const track = document.querySelector(`.slider-track[data-game-id="${gameId}"]`);
+      if (track) {
+        track.classList.remove('flash');
+        // Force reflow to restart animation
+        void track.offsetWidth;
+        track.classList.add('flash');
+      }
+    }
+  });
+
+  prevScores = newScores;
+
+  // Spawn fireworks on win cards
+  document.querySelectorAll('.fireworks-container').forEach(container => {
+    if (!container.dataset.spawned) {
+      container.dataset.spawned = 'true';
+      spawnFireworks(container);
+    }
+  });
+
+  // Play air horn for NEW wins (wins that weren't wins on the previous render)
+  bettedGames.forEach(game => {
+    const activePeriod = getActivePeriod(game);
+    const line = getPick(game.id, activePeriod);
+    const side = getSide(game.id, activePeriod);
+    const actual = calcHalfScore(game, activePeriod);
+    const complete = isHalfComplete(game, activePeriod);
+    const { result } = getResult(line, actual, complete, false);
+    const isWin = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side && side === result;
+    const isLoss = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side && side !== result;
+    const settleKey = `${game.id}_${activePeriod}`;
+    if (isWin && !prevSettled[settleKey]) {
+      playAirHorn();
+    }
+    if (isLoss && !prevSettled[settleKey]) {
+      playLossSound();
+    }
+    if (isWin || isLoss) prevSettled[settleKey] = true;
+  });
+}
+
+let prevSettled = {};
+
+function spawnFireworks(container) {
+  const colors = ['#22c55e', '#f97316', '#eab308', '#3b82f6', '#ef4444', '#a855f7', '#ec4899'];
+  const rect = container.getBoundingClientRect();
+  const w = container.offsetWidth;
+  const h = container.offsetHeight;
+
+  function burst() {
+    const cx = Math.random() * w;
+    const cy = Math.random() * h * 0.6;
+    const count = 12 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < count; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'firework-particle';
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
+      const dist = 30 + Math.random() * 50;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const size = 2 + Math.random() * 3;
+      particle.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${color};animation-duration:${0.6 + Math.random() * 0.6}s;--dx:${dx}px;--dy:${dy}px;`;
+      particle.style.animation = 'none';
+      container.appendChild(particle);
+
+      // Animate with transform
+      requestAnimationFrame(() => {
+        particle.style.transition = `all ${0.6 + Math.random() * 0.6}s ease-out`;
+        particle.style.transform = `translate(${dx}px, ${dy}px) scale(0)`;
+        particle.style.opacity = '0';
+      });
+
+      setTimeout(() => particle.remove(), 1500);
+    }
+  }
+
+  // Multiple bursts
+  burst();
+  setTimeout(burst, 300);
+  setTimeout(burst, 600);
+  setTimeout(burst, 1000);
+  // Repeat every 3 seconds
+  setInterval(() => {
+    burst();
+    setTimeout(burst, 300);
+  }, 3500);
+}
+
+function playAirHorn() {
+  // Generate air horn sound using Web Audio API
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function makeOsc(freq, startTime, duration, gain) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, startTime);
+      osc.frequency.linearRampToValueAtTime(freq * 1.02, startTime + duration);
+      g.gain.setValueAtTime(gain, startTime);
+      g.gain.setValueAtTime(gain, startTime + duration * 0.7);
+      g.gain.linearRampToValueAtTime(0, startTime + duration);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    }
+
+    const now = ctx.currentTime;
+    // Classic air horn: layered sawtooth waves
+    makeOsc(240, now, 0.8, 0.15);
+    makeOsc(480, now, 0.8, 0.1);
+    makeOsc(360, now, 0.8, 0.08);
+    makeOsc(240, now + 0.15, 0.65, 0.12);
+    makeOsc(600, now + 0.1, 0.5, 0.05);
+  } catch(e) {
+    console.log('Audio not available');
+  }
+}
+
+function playLossSound() {
+  // Sad descending trombone: wah wah wah wahhh
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    function sadNote(startFreq, endFreq, startTime, duration, vol) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(startFreq, startTime);
+      osc.frequency.linearRampToValueAtTime(endFreq, startTime + duration);
+      g.gain.setValueAtTime(vol, startTime);
+      g.gain.setValueAtTime(vol * 0.8, startTime + duration * 0.8);
+      g.gain.linearRampToValueAtTime(0, startTime + duration);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    }
+
+    // Wah wah wah wahhhhh
+    sadNote(392, 380, now, 0.3, 0.15);        // G
+    sadNote(349, 340, now + 0.35, 0.3, 0.15);  // F
+    sadNote(330, 320, now + 0.7, 0.3, 0.15);   // E
+    sadNote(311, 260, now + 1.05, 0.8, 0.18);  // Eb slides down low
+  } catch(e) {
+    console.log('Audio not available');
+  }
 }
 
 // --- Interactions ---
@@ -1616,7 +2228,8 @@ function onPickChange(input) {
   const gameId = input.dataset.game;
   const period = input.dataset.period;
   savePick(gameId, period, input.value);
-  reRenderGameCard(gameId, period);
+  // Don't re-render the card — just update the summary
+  renderSummary(getAllCachedGames());
 }
 
 function onSideChange(btn) {
@@ -1624,8 +2237,30 @@ function onSideChange(btn) {
   const period = btn.dataset.period;
   const side = btn.dataset.side;
   const currentSide = getSide(gameId, period);
-  saveSide(gameId, period, currentSide === side ? '' : side);
-  reRenderGameCard(gameId);
+  const newSide = currentSide === side ? '' : side;
+  saveSide(gameId, period, newSide);
+
+  // Update just the buttons in this row instead of re-rendering everything
+  const toggle = btn.parentElement;
+  toggle.querySelectorAll('.side-btn').forEach(b => {
+    b.classList.remove('active-over', 'active-under');
+  });
+  if (newSide === 'over') btn.classList.add('active-over');
+  if (newSide === 'under') btn.classList.add('active-under');
+
+  renderSummary(getAllCachedGames());
+}
+
+function adjustDelay(gameId, delta) {
+  const current = gameDelays[gameId] || 0;
+  const newDelay = Math.max(0, Math.min(120, current + delta));
+  gameDelays[gameId] = newDelay;
+  // Update just the delay display without full re-render
+  const btn = event.target;
+  const control = btn.closest('.delay-control');
+  if (control) {
+    control.querySelector('.delay-value').textContent = newDelay > 0 ? newDelay + 's' : '⏱';
+  }
 }
 
 function getAllCachedGames() {
@@ -1707,11 +2342,33 @@ async function loadCurrentView() {
 
   const games = await fetchGamesByFilters();
 
+  // Store timestamped snapshots for each game (for delay feature)
+  const now = Date.now();
+  games.forEach(game => {
+    if (!gameDataHistory[game.id]) gameDataHistory[game.id] = [];
+    gameDataHistory[game.id].push({ timestamp: now, data: JSON.parse(JSON.stringify(game)) });
+    // Keep only last 2 minutes of history
+    gameDataHistory[game.id] = gameDataHistory[game.id].filter(s => now - s.timestamp < 120000);
+  });
+
   if (currentTab === 'input') {
     renderGames(games);
     renderSummary(games);
   } else {
-    renderTracker(games);
+    // Apply per-game delays
+    const delayedGames = games.map(game => {
+      const delay = gameDelays[game.id] || 0;
+      if (delay <= 0 || !gameDataHistory[game.id]) return game;
+      const targetTime = now - (delay * 1000);
+      // Find the snapshot closest to targetTime
+      const history = gameDataHistory[game.id];
+      let best = history[0];
+      for (const snap of history) {
+        if (snap.timestamp <= targetTime) best = snap;
+      }
+      return best ? { ...best.data, gender: game.gender } : game;
+    });
+    renderTracker(delayedGames);
   }
 
   isFirstLoad = false;
@@ -1729,14 +2386,16 @@ function updateRefreshInfo() {
 }
 
 async function refresh() {
+  // If user is actively typing in an input, skip this refresh entirely
+  const focused = document.activeElement;
+  if (focused && focused.classList.contains('ou-input')) {
+    return;
+  }
+
   const expandedIds = new Set();
   document.querySelectorAll('.game-card.expanded').forEach(card => {
     expandedIds.add(card.dataset.id);
   });
-
-  const focused = document.activeElement;
-  const focusedGame = focused?.dataset?.game;
-  const focusedPeriod = focused?.dataset?.period;
 
   await loadCurrentView();
 
@@ -1744,11 +2403,6 @@ async function refresh() {
     const card = document.querySelector(`.game-card[data-id="${id}"]`);
     if (card) card.classList.add('expanded');
   });
-
-  if (focusedGame && focusedPeriod) {
-    const input = document.querySelector(`input[data-game="${focusedGame}"][data-period="${focusedPeriod}"]`);
-    if (input) input.focus();
-  }
 }
 
 let tickerCount = 0;
