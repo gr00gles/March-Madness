@@ -571,15 +571,54 @@ body {
 }
 
 /* Bet Tracker View */
-.tracker-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 8px;
-  margin-bottom: 16px;
+.tracker-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.tracker-summary .stat-card { padding: 10px; }
-.tracker-summary .stat-value { font-size: 1.2rem; }
+.tracker-side-counter {
+  position: sticky;
+  top: 140px;
+  min-width: 70px;
+  text-align: center;
+  padding: 16px 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.tracker-side-counter .counter-num {
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tracker-side-counter .counter-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+.tracker-side-counter.wins .counter-num { color: var(--over); }
+.tracker-side-counter.wins { border-color: rgba(34,197,94,0.2); }
+.tracker-side-counter.losses .counter-num { color: var(--under); }
+.tracker-side-counter.losses { border-color: rgba(239,68,68,0.2); }
+
+.tracker-cards-center {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .tracker-side-counter { min-width: 50px; padding: 10px 4px; }
+  .tracker-side-counter .counter-num { font-size: 1.8rem; }
+  .tracker-side-counter .counter-label { font-size: 0.55rem; }
+  .tracker-layout { gap: 8px; }
+}
 
 .tracker-card {
   background: var(--card);
@@ -982,6 +1021,146 @@ body {
   .ou-input { width: 60px; }
   .date-label { min-width: auto; }
 }
+
+/* Tip flag */
+.tip-flag {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateX(100%) translateY(-50%);
+  z-index: 999;
+  background: linear-gradient(135deg, #1a0a00 0%, #2d1000 30%, #1a0a00 60%, #2d1000 100%);
+  border: 3px solid #f97316;
+  border-right: none;
+  border-radius: 20px 0 0 20px;
+  padding: 24px 22px 28px 20px;
+  text-align: center;
+  width: 140px;
+  box-shadow: -8px 0 40px rgba(249,115,22,0.5), inset 0 0 30px rgba(249,115,22,0.1), 0 0 60px rgba(234,179,8,0.2);
+  overflow: visible;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.tip-flag.visible {
+  transform: translateX(0) translateY(-50%);
+}
+.tip-flag::before {
+  content: '🔥🔥🔥';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.2rem;
+  animation: flameWave 0.4s ease-in-out infinite alternate;
+  filter: blur(0.3px);
+  letter-spacing: -4px;
+}
+.tip-flag::after {
+  content: '🔥🔥';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  animation: flameWave 0.35s 0.15s ease-in-out infinite alternate;
+  filter: blur(0.3px);
+  letter-spacing: -2px;
+}
+@keyframes flameWave {
+  from { transform: translateX(-50%) translateY(0) scaleX(1); }
+  to { transform: translateX(-50%) translateY(-8px) scaleX(0.85); }
+}
+@keyframes flagPulse {
+  0%, 100% { box-shadow: -8px 0 40px rgba(249,115,22,0.5), inset 0 0 30px rgba(249,115,22,0.1), 0 0 60px rgba(234,179,8,0.2); border-color: #f97316; }
+  50% { box-shadow: -8px 0 60px rgba(249,115,22,0.7), inset 0 0 40px rgba(249,115,22,0.15), 0 0 80px rgba(234,179,8,0.4); border-color: #eab308; }
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; text-shadow: 0 0 10px rgba(249,115,22,0.8), 0 0 20px rgba(234,179,8,0.4); }
+  50% { opacity: 0.9; text-shadow: 0 0 20px rgba(249,115,22,1), 0 0 40px rgba(234,179,8,0.7), 0 0 60px rgba(239,68,68,0.3); }
+}
+.tip-flag.pulsing {
+  animation: flagPulse 1.5s ease-in-out infinite;
+}
+.tip-flag.dismissing {
+  transform: translateX(110%) translateY(-50%) !important;
+  transition: transform 0.3s ease !important;
+}
+.tip-flag .tip-flames-top {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.8rem;
+  animation: flameWave 0.5s 0.1s ease-in-out infinite alternate;
+  letter-spacing: -3px;
+}
+.tip-flag .tip-emoji {
+  font-size: 3rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  animation: wobble 1s ease-in-out infinite;
+}
+.tip-flag .tip-label {
+  font-size: 1.1rem;
+  font-weight: 900;
+  background: linear-gradient(180deg, #fff, #f97316, #eab308);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 8px 0;
+  line-height: 1.2;
+  position: relative;
+  z-index: 1;
+  animation: textFlicker 2s ease-in-out infinite;
+}
+.tip-flag .tip-btn {
+  display: block;
+  background: linear-gradient(135deg, #f97316, #eab308, #f97316);
+  background-size: 200% 200%;
+  animation: shimmerBtn 2s ease infinite;
+  color: #000;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+@keyframes shimmerBtn {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.tip-flag .tip-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 24px rgba(249,115,22,0.7);
+}
+.tip-flag .tip-x {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  background: none;
+  border: none;
+  line-height: 1;
+  padding: 4px;
+  z-index: 2;
+}
+.tip-flag .tip-x:hover { color: #fff; }
 </style>
 </head>
 <body>
@@ -1745,29 +1924,14 @@ function renderTracker(games) {
     });
   });
 
-  let html = `
-    <div class="tracker-summary">
-      <div class="stat-card"><div class="stat-value over">${totalWins}</div><div class="stat-label">Winners</div></div>
-      <div class="stat-card"><div class="stat-value under">${totalLosses}</div><div class="stat-label">Losers</div></div>
-      <div class="stat-card"><div class="stat-value push">${totalPushes}</div><div class="stat-label">Pushes</div></div>
-      <div class="stat-card"><div class="stat-value" style="color:var(--live)">${totalInProgress}</div><div class="stat-label">In Progress</div></div>
-      <div class="stat-card"><div class="stat-value">${totalPending}</div><div class="stat-label">Pending</div></div>
-    </div>`;
-
   const allBetted = games.filter(game => ['1h', '2h', 'full'].some(p => hasBet(game.id, p)));
-  const unbettedGames = games.filter(game => !['1h', '2h', 'full'].some(p => hasBet(game.id, p)));
-
-  if (!allBetted.length && !unbettedGames.length) {
-    html += `<div class="no-games"><h3>No games on this date</h3><p>Navigate to a game day to see your bets.</p></div>`;
-    document.getElementById('gamesList').innerHTML = html;
-    return;
-  }
 
   if (!allBetted.length) {
-    html += `<div class="no-games"><h3>No bets entered for this date</h3><p>Go to "Input" view to enter your lines and pick O/U.</p></div>`;
-    document.getElementById('gamesList').innerHTML = html;
+    document.getElementById('gamesList').innerHTML = `<div class="no-games"><h3>No bets entered</h3><p>Go to "Input" view to enter your lines and pick O/U.</p></div>`;
     return;
   }
+
+  let cardsHtml = '';
 
   // Categorize games and sort
   const now = Date.now();
@@ -1879,9 +2043,9 @@ function renderTracker(games) {
       isWin ? 'win-card' : '',
     ].filter(Boolean).join(' ');
 
-    html += `<div class="${cardClasses}" data-game-id="${game.id}">`;
+    cardsHtml += `<div class="${cardClasses}" data-game-id="${game.id}">`;
     if (isWin) {
-      html += `<div class="fireworks-container" id="fw-${game.id}"></div>`;
+      cardsHtml += `<div class="fireworks-container" id="fw-${game.id}"></div>`;
     }
 
     // Status row: period, status, token
@@ -1892,7 +2056,7 @@ function renderTracker(games) {
       <button class="delay-btn" onclick="adjustDelay('${game.id}', 5)">+</button>
     </div>` : '';
 
-    html += `<div class="tracker-status-row">
+    cardsHtml += `<div class="tracker-status-row">
       <div class="tracker-status-left">
         ${genderBadge}
         <span class="tracker-period-label">${periodLabel}</span>
@@ -1907,7 +2071,7 @@ function renderTracker(games) {
 
     // Main layout: AWAY team | bar | HOME team
     if (line !== '' && line !== null && line !== undefined) {
-      html += `<div class="tracker-bar-row">
+      cardsHtml += `<div class="tracker-bar-row">
         <div class="tracker-team-side">
           ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
           <span class="t-name">${game.away.abbreviation || game.away.name}</span>
@@ -1929,7 +2093,7 @@ function renderTracker(games) {
         </div>
       </div>`;
     } else {
-      html += `<div class="tracker-bar-row">
+      cardsHtml += `<div class="tracker-bar-row">
         <div class="tracker-team-side">
           ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
           <span class="t-name">${game.away.abbreviation || game.away.name}</span>
@@ -1944,41 +2108,12 @@ function renderTracker(games) {
       </div>`;
     }
 
-    html += `</div>`;
+    cardsHtml += `</div>`;
   });
-
-  // Unbetted games
-  if (unbettedGames.length) {
-    html += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">No Bets Entered</div>`;
-    unbettedGames.forEach(game => {
-      const statusClass = game.state === 'in' ? 'live' : game.state === 'post' ? 'final' : 'pre';
-      const gb = currentGender === 'both' && game.gender
-        ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
-        : '';
-      html += `<div class="tracker-card tracker-card-dim">
-        <div class="tracker-bar-row">
-          <div class="tracker-team-side">
-            ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
-            <span class="t-name">${game.away.abbreviation || game.away.name}</span>
-            ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
-          </div>
-          <div class="tracker-bar-center" style="text-align:center;">
-            ${gb}
-            <span class="tracker-status ${statusClass}">${game.state === 'in' ? '● ' : ''}${game.statusText}</span>
-          </div>
-          <div class="tracker-team-side">
-            ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
-            <span class="t-name">${game.home.abbreviation || game.home.name}</span>
-            ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
-          </div>
-        </div>
-      </div>`;
-    });
-  }
 
   // Settled games section (pushed down after 1 min)
   if (settledGames.length) {
-    html += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">Settled</div>`;
+    cardsHtml += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">Settled</div>`;
     settledGames.forEach(game => {
       const activePeriod = getActivePeriod(game);
       const line = getPick(game.id, activePeriod);
@@ -2002,7 +2137,7 @@ function renderTracker(games) {
         ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
         : '';
 
-      html += `<div class="tracker-card" style="opacity:0.7;">
+      cardsHtml += `<div class="tracker-card" style="opacity:0.7;">
         <div class="tracker-bar-row">
           <div class="tracker-team-side">
             ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
@@ -2026,7 +2161,18 @@ function renderTracker(games) {
     });
   }
 
-  document.getElementById('gamesList').innerHTML = html;
+  document.getElementById('gamesList').innerHTML = `
+    <div class="tracker-layout">
+      <div class="tracker-side-counter wins">
+        <div class="counter-num">${totalWins}</div>
+        <div class="counter-label">Wins</div>
+      </div>
+      <div class="tracker-cards-center">${cardsHtml}</div>
+      <div class="tracker-side-counter losses">
+        <div class="counter-num">${totalLosses}</div>
+        <div class="counter-label">Losses</div>
+      </div>
+    </div>`;
 
   // Flash detection: compare current scores to previous and trigger animation
   const newScores = {};
@@ -2071,6 +2217,7 @@ function renderTracker(games) {
     const settleKey = `${game.id}_${activePeriod}`;
     if (isWin && !prevSettled[settleKey]) {
       playAirHorn();
+      setTimeout(() => showTipPopup(), 3000);
     }
     if (isLoss && !prevSettled[settleKey]) {
       playLossSound();
@@ -2157,6 +2304,44 @@ function playAirHorn() {
   } catch(e) {
     console.log('Audio not available');
   }
+}
+
+let tipDismissTimer = null;
+function showTipPopup() {
+  if (document.querySelector('.tip-flag')) return; // already showing
+
+  const flag = document.createElement('div');
+  flag.className = 'tip-flag';
+  flag.innerHTML = `
+    <button class="tip-x" onclick="dismissTip(this)">✕</button>
+    <div class="tip-flames-top">🔥🔥</div>
+    <div class="tip-emoji">💰</div>
+    <div class="tip-label">TIP<br>THE<br>MAN!</div>
+    <a href="https://buy.stripe.com/dRmaEX4eu2Dq4Hj0gYaAw00" target="_blank" class="tip-btn">💸 SEND TIP</a>
+  `;
+  document.body.appendChild(flag);
+
+  // Slide in after a frame (so the initial transform takes effect first)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      flag.classList.add('visible');
+    });
+  });
+
+  // Start pulsing glow after slide-in transition finishes
+  setTimeout(() => { if (flag.parentNode) flag.classList.add('pulsing'); }, 800);
+
+  // Auto-dismiss after 25 seconds
+  if (tipDismissTimer) clearTimeout(tipDismissTimer);
+  tipDismissTimer = setTimeout(() => dismissTip(flag), 25000);
+}
+
+function dismissTip(el) {
+  const flag = el.closest ? el.closest('.tip-flag') : el;
+  if (!flag || !flag.parentNode || flag.classList.contains('dismissing')) return;
+  flag.classList.add('dismissing');
+  flag.classList.remove('visible');
+  setTimeout(() => { if (flag.parentNode) flag.remove(); }, 400);
 }
 
 function playLossSound() {
