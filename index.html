@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>March Madness O/U Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏀</text></svg>">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -25,6 +26,83 @@
   --input-bg: #13151d;
 }
 
+[data-theme="light"] {
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --card-hover: #f9fafb;
+  --border: #d1d5db;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --accent: #ea580c;
+  --over: #16a34a;
+  --under: #dc2626;
+  --push: #ca8a04;
+  --live: #dc2626;
+  --input-bg: #f9fafb;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+
+/* Tip button in header */
+.btn-tip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(249,115,22,0.4);
+  background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(251,146,60,0.1));
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-tip:hover { border-color: var(--accent); background: rgba(249,115,22,0.25); }
+
+/* Collapsible header */
+.header-collapse-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  padding: 2px 16px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 101;
+  transition: all 0.2s;
+  border-top: none;
+}
+.header-collapse-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.header {
+  position: relative;
+}
+
+.header.collapsed .controls {
+  display: none;
+}
+.header.collapsed {
+  padding-bottom: 8px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
@@ -33,12 +111,13 @@ body {
 }
 
 .header {
-  background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+  background: linear-gradient(135deg, var(--card) 0%, var(--bg) 100%);
   border-bottom: 1px solid var(--border);
   padding: 16px 20px;
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: padding 0.3s;
 }
 
 .header-top {
@@ -524,18 +603,45 @@ body {
 /* Win crown on slider */
 .slider-crown {
   position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 22px;
-  z-index: 3;
+  top: -41px;
+  right: 1px;
+  font-size: 38px;
+  z-index: 4;
   animation: crownBounce 0.6s ease;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 @keyframes crownBounce {
-  0% { transform: translateX(-50%) scale(0) rotate(-20deg); }
-  50% { transform: translateX(-50%) scale(1.3) rotate(10deg); }
-  100% { transform: translateX(-50%) scale(1) rotate(0deg); }
+  0% { transform: scale(0) rotate(-20deg); }
+  50% { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* LOSER stamp */
+.loser-stamp {
+  position: absolute;
+  top: 35%;
+  right: 132px;
+  transform: translateY(-50%) rotate(-18deg);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: rgba(239, 68, 68, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  z-index: 10;
+  pointer-events: none;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  border: 3px solid rgba(239, 68, 68, 0.5);
+  border-radius: 6px;
+  padding: 2px 12px;
+  animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  white-space: nowrap;
+}
+
+@keyframes stampSlam {
+  0% { transform: translateY(-50%) rotate(-18deg) scale(3); opacity: 0; }
+  60% { transform: translateY(-50%) rotate(-18deg) scale(0.9); opacity: 1; }
+  100% { transform: translateY(-50%) rotate(-18deg) scale(1); opacity: 1; }
 }
 
 /* Fireworks */
@@ -549,7 +655,7 @@ body {
 }
 
 .tracker-card { position: relative; overflow: hidden; }
-.tracker-card > *:not(.fireworks-container) { position: relative; z-index: 1; }
+.tracker-card > *:not(.fireworks-container):not(.loser-stamp) { position: relative; z-index: 1; }
 
 .firework-particle {
   position: absolute;
@@ -780,9 +886,9 @@ body {
 /* The slider bar */
 .slider-track {
   position: relative;
-  height: 30px;
+  height: 36px;
   background: var(--input-bg);
-  border-radius: 15px;
+  border-radius: 18px;
   overflow: visible;
   border: 1px solid var(--border);
 }
@@ -807,23 +913,35 @@ body {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 22px;
+  font-size: 52px;
   z-index: 2;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.9));
   transition: left 0.4s ease;
+}
+
+.slider-ball.ball-over {
+  right: -8px;
+  left: auto !important;
+  transform: translate(0, -50%);
 }
 
 .slider-score-inside {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 0.7rem;
-  font-weight: 800;
+  font-size: 1.1rem;
+  font-weight: 900;
   color: #fff;
   z-index: 3;
   pointer-events: none;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
   transition: left 0.4s ease;
+}
+
+.slider-score-inside.score-over {
+  right: 8px;
+  left: auto !important;
+  transform: translate(0, -50%);
 }
 
 .slider-line-marker {
@@ -1177,10 +1295,12 @@ body {
 
 <!-- App (shown when signed in) -->
 <div id="appContainer" style="display:none">
-<div class="header">
+<div class="header" id="mainHeader">
   <div class="header-top">
     <h1>March Madness O/U Tracker</h1>
     <div class="user-section" id="userSection">
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">🌙</button>
+      <a href="https://buy.stripe.com/dRmaEX4eu2Dq4Hj0gYaAw00" target="_blank" class="btn-tip">🔥 Tip</a>
       <img class="user-avatar" id="userAvatar" src="" alt="" style="display:none">
       <span class="user-name" id="userDisplayName"></span>
       <span class="sync-badge connected" id="syncBadge">Synced</span>
@@ -1222,6 +1342,7 @@ body {
       <span id="refreshInfo">Loading...</span>
     </div>
   </div>
+  <button class="header-collapse-btn" id="headerCollapseBtn">▲ Minimize</button>
 </div>
 
 <div class="main">
@@ -1353,6 +1474,35 @@ document.getElementById('signInBtn').addEventListener('click', () => {
 
 document.getElementById('signOutBtn').addEventListener('click', () => {
   auth.signOut();
+});
+
+// Theme toggle
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('mm_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('mm_theme', next);
+  themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+});
+
+// Header collapse
+const headerEl = document.getElementById('mainHeader');
+const collapseBtn = document.getElementById('headerCollapseBtn');
+const headerCollapsed = localStorage.getItem('mm_header_collapsed') === 'true';
+if (headerCollapsed) {
+  headerEl.classList.add('collapsed');
+  collapseBtn.textContent = '▼ Expand';
+}
+
+collapseBtn.addEventListener('click', () => {
+  const isCollapsed = headerEl.classList.toggle('collapsed');
+  collapseBtn.textContent = isCollapsed ? '▼ Expand' : '▲ Minimize';
+  localStorage.setItem('mm_header_collapsed', isCollapsed);
 });
 
 function migrateLocalPicks() {
@@ -1673,10 +1823,13 @@ function renderSummary(games) {
 }
 
 function renderGames(games) {
-  if (!games.length) {
+  // Input tab only shows live and upcoming games
+  const filtered = games.filter(g => g.state === 'in' || g.state === 'pre');
+
+  if (!filtered.length) {
     document.getElementById('gamesList').innerHTML = `
       <div class="no-games">
-        <h3>No tournament games on this date</h3>
+        <h3>No live or upcoming games on this date</h3>
         <p>Use the arrows to navigate to a day with games, or switch to "All Dates".</p>
       </div>`;
     return;
@@ -1685,7 +1838,7 @@ function renderGames(games) {
   let html = '';
   let lastRound = '';
 
-  games.forEach(game => {
+  filtered.forEach(game => {
     if (currentDateMode !== 'single' && game.round && game.round !== lastRound) {
       lastRound = game.round;
       const dateStr = formatDateDisplay(new Date(game.date));
@@ -1695,8 +1848,7 @@ function renderGames(games) {
     }
 
     const isLive = game.state === 'in';
-    const isFinal = game.state === 'post';
-    const stateClass = isLive ? 'live' : isFinal ? 'final' : '';
+    const stateClass = isLive ? 'live' : '';
     const expandedClass = allExpanded ? 'expanded' : '';
 
     html += `
@@ -1856,12 +2008,13 @@ function hasBet(gameId, period) {
   return line !== '' && line !== null && line !== undefined;
 }
 
-function renderSlider(score, line, side, result, gameId, startFrom, isWin, isLoss) {
+function renderSlider(score, line, side, result, gameId, startFrom, isWin, isLoss, periodKey) {
   if (line === '' || line === null || line === undefined) return '';
 
   const lineNum = parseFloat(line);
+  const lineTarget = Math.ceil(lineNum); // whole number needed to clear
   const start = startFrom || 0;
-  const range = lineNum - start;
+  const range = lineTarget - start;
   const progress = score - start;
 
   const pct = range > 0 ? Math.min((progress / range) * 100, 100) : (score >= lineNum ? 100 : 0);
@@ -1871,14 +2024,20 @@ function renderSlider(score, line, side, result, gameId, startFrom, isWin, isLos
   let fillClass = 'under-line';
   if (isAt) fillClass = 'at-line';
   else if (isOver) {
-    // Only color on settled win/loss
     if (isWin) fillClass = 'over-line-win';
     else if (isLoss) fillClass = 'over-line-loss';
     else fillClass = 'over-line-neutral';
   }
 
-  const ballPct = Math.min(pct, 95);
-  const diff = score - lineNum;
+  // When over/at the line, ball grows big and pushes to far right
+  const hitLine = isOver || isAt;
+  const ballPct = hitLine ? 100 : Math.min(pct, 95);
+  const ballOverClass = hitLine ? ' ball-over' : '';
+  const scoreOverClass = hitLine ? ' score-over' : '';
+
+  const rawDiff = score - lineNum;
+  // Round to whole points: under=-6 means need 6 pts, over=+1 means 1 pt clear
+  const diff = rawDiff < 0 ? -Math.ceil(Math.abs(rawDiff)) : (rawDiff > 0 ? Math.ceil(rawDiff) : 0);
   const sign = diff > 0 ? '+' : '';
   const diffClass = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
 
@@ -1889,18 +2048,19 @@ function renderSlider(score, line, side, result, gameId, startFrom, isWin, isLos
   if (isWin) diffColorClass = 'over';
   else if (isLoss) diffColorClass = 'under';
 
+  const uid = gameId ? `${gameId}_${periodKey || 'full'}` : '';
+
   return `
-    <div class="slider-track" data-game-id="${gameId || ''}">
+    <div class="slider-track" data-game-id="${uid}">
       <div class="slider-fill ${fillClass}" style="width:${pct}%"></div>
-      <div class="slider-line-marker" style="right:0"></div>
-      <div class="slider-ball" style="left:${ballPct}%">🏀</div>
-      <div class="slider-score-inside" style="left:${ballPct}%">${score}</div>
+      <div class="slider-ball${ballOverClass}" style="left:${ballPct}%">🏀</div>
+      <div class="slider-score-inside${scoreOverClass}" style="left:${ballPct}%">${score}</div>
       ${crownHtml}
     </div>
     <div class="tracker-bar-info">
-      <span class="tracker-bar-score">${start > 0 ? start : '0'}</span>
-      <span class="tracker-bar-diff diff-value ${diffColorClass}">${sign}${diff.toFixed(1)}</span>
-      <span class="tracker-bar-line-num">${lineNum}</span>
+      <span class="tracker-bar-score">${start}</span>
+      <span class="tracker-bar-diff diff-value ${diffColorClass}">${sign}${diff}</span>
+      <span class="tracker-bar-line-num"${hitLine ? ' style="visibility:hidden"' : ''}>${Math.ceil(lineNum)}</span>
     </div>`;
 }
 
@@ -1933,64 +2093,55 @@ function renderTracker(games) {
 
   let cardsHtml = '';
 
-  // Categorize games and sort
+  // Build individual bet entries (one per period per game)
   const now = Date.now();
-  const settledGames = []; // wins/losses with 1min+ elapsed
-  const activeGames = []; // live, pre, or recently settled (<1min)
+  const activeBets = [];
+  const settledBets = [];
 
   allBetted.forEach(game => {
-    const activePeriod = getActivePeriod(game);
-    const line = getPick(game.id, activePeriod);
-    const side = getSide(game.id, activePeriod);
-    const actual = calcHalfScore(game, activePeriod);
-    const complete = isHalfComplete(game, activePeriod);
-    const { result } = getResult(line, actual, complete, false);
-    const isSettled = complete && result && result !== 'pending' && !result.startsWith('pacing-');
+    ['1h', '2h', 'full'].forEach(period => {
+      if (!hasBet(game.id, period)) return;
+      const line = getPick(game.id, period);
+      const side = getSide(game.id, period);
+      if (!side) return;
 
-    if (isSettled) {
-      // Check if win was recorded recently (within 60s)
-      const winKey = `${game.id}_${activePeriod}_settled`;
-      if (!winTimestamps[winKey]) {
-        winTimestamps[winKey] = now;
-      }
-      const elapsed = now - winTimestamps[winKey];
-      if (elapsed < 60000) {
-        activeGames.push(game); // Keep at top for 1 minute
+      const actual = calcHalfScore(game, period);
+      const complete = isHalfComplete(game, period);
+      const inProgress = isHalfInProgress(game, period);
+      const { diff, result } = getResult(line, actual, complete, inProgress);
+      const isSettled = complete && result && result !== 'pending' && !result.startsWith('pacing-');
+
+      const entry = { game, period, line, side, actual, complete, inProgress, diff, result, isSettled };
+
+      if (isSettled) {
+        const winKey = `${game.id}_${period}_settled`;
+        if (!winTimestamps[winKey]) winTimestamps[winKey] = now;
+        const elapsed = now - winTimestamps[winKey];
+        if (elapsed < 60000) activeBets.push(entry);
+        else settledBets.push(entry);
       } else {
-        settledGames.push(game); // Push down
+        activeBets.push(entry);
       }
-    } else {
-      activeGames.push(game);
-    }
+    });
   });
 
-  // Sort active games: closest to finishing at top
-  // Priority: live games sorted by how close to their line, then pre-game
-  activeGames.sort((a, b) => {
-    // Live games first
-    const aLive = a.state === 'in' ? 0 : a.state === 'post' ? 1 : 2;
-    const bLive = b.state === 'in' ? 0 : b.state === 'post' ? 1 : 2;
+  // Sort active bets: live closest to line first, then pre-game
+  activeBets.sort((a, b) => {
+    const aLive = a.game.state === 'in' ? 0 : a.game.state === 'post' ? 1 : 2;
+    const bLive = b.game.state === 'in' ? 0 : b.game.state === 'post' ? 1 : 2;
     if (aLive !== bLive) return aLive - bLive;
-
-    // Among live games, sort by % of line completed (highest first = closest to finish)
-    if (a.state === 'in' && b.state === 'in') {
-      const aPeriod = getActivePeriod(a);
-      const bPeriod = getActivePeriod(b);
-      const aLine = parseFloat(getPick(a.id, aPeriod)) || 999;
-      const bLine = parseFloat(getPick(b.id, bPeriod)) || 999;
-      const aScore = calcHalfScore(a, aPeriod);
-      const bScore = calcHalfScore(b, bPeriod);
-      const aPct = aScore / aLine;
-      const bPct = bScore / bLine;
-      return bPct - aPct; // Higher % first
+    if (a.game.state === 'in' && b.game.state === 'in') {
+      const aLine = parseFloat(a.line) || 999;
+      const bLine = parseFloat(b.line) || 999;
+      const aPct = a.actual / aLine;
+      const bPct = b.actual / bLine;
+      return bPct - aPct;
     }
-
     return 0;
   });
 
-  const bettedGames = [...activeGames];
-
-  bettedGames.forEach(game => {
+  function renderBetCard(entry, isSettledSection) {
+    const { game, period, line, side, actual, complete, inProgress, diff, result } = entry;
     const isLive = game.state === 'in';
     const isFinal = game.state === 'post';
     const statusClass = isLive ? 'live' : isFinal ? 'final' : 'pre';
@@ -1999,19 +2150,12 @@ function renderTracker(games) {
       ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
       : '';
 
-    const activePeriod = getActivePeriod(game);
-    const periodLabel = activePeriod === '1h' ? '1ST HALF' : activePeriod === '2h' ? '2ND HALF' : 'FULL GAME';
-    const line = getPick(game.id, activePeriod);
-    const side = getSide(game.id, activePeriod);
-    const actual = calcHalfScore(game, activePeriod);
-    const complete = isHalfComplete(game, activePeriod);
-    const inProgress = isHalfInProgress(game, activePeriod);
-    const showScore = game.state !== 'pre' && (activePeriod === 'full' || game.away.linescores.length > (activePeriod === '1h' ? 0 : 1));
+    const periodLabel = period === '1h' ? '1ST HALF' : period === '2h' ? '2ND HALF' : 'FULL GAME';
+    const showScore = game.state !== 'pre' && (period === 'full' || game.away.linescores.length > (period === '1h' ? 0 : 1));
     const scoreToShow = showScore ? actual : 0;
-    const { diff, result } = getResult(line, actual, complete, inProgress);
 
-    const sideLabel = side ? (side === 'over' ? 'OVER' : 'UNDER') : '';
-    const sideClass = side || '';
+    const sideLabel = side === 'over' ? 'OVER' : 'UNDER';
+    const sideClass = side;
 
     // Token
     let tokenHtml = '';
@@ -2020,18 +2164,17 @@ function renderTracker(games) {
       const baseResult = isPacing ? result.replace('pacing-', '') : result;
       if (isPacing) tokenHtml = `<span class="tracker-token live">LIVE</span>`;
       else if (baseResult === 'push') tokenHtml = `<span class="tracker-token push">PUSH</span>`;
-      else if (side) {
+      else {
         tokenHtml = side === baseResult
           ? `<span class="tracker-token win">WIN</span>`
           : `<span class="tracker-token loss">LOSS</span>`;
-      } else tokenHtml = `<span class="tracker-token ${baseResult}">${baseResult.toUpperCase()}</span>`;
+      }
     } else if (game.state === 'pre') {
       tokenHtml = `<span class="tracker-token pending">PRE</span>`;
     }
 
-    // Determine if this bet is a win (for crown + fireworks)
-    const isWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side && side === result;
-    const isLoss = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side && side !== result;
+    const isWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side === result;
+    const isLoss2 = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side !== result;
 
     const dateLabel = currentDateMode !== 'single'
       ? `<span style="font-size:0.6rem;color:var(--text-muted)">${formatDateDisplay(new Date(game.date))}</span>`
@@ -2041,14 +2184,18 @@ function renderTracker(games) {
       'tracker-card',
       isLive ? 'is-live' : '',
       isWin ? 'win-card' : '',
+      isSettledSection ? 'settled-card' : '',
     ].filter(Boolean).join(' ');
 
-    cardsHtml += `<div class="${cardClasses}" data-game-id="${game.id}">`;
-    if (isWin) {
-      cardsHtml += `<div class="fireworks-container" id="fw-${game.id}"></div>`;
+    const cardId = `${game.id}_${period}`;
+    let html = `<div class="${cardClasses}" data-game-id="${cardId}"${isSettledSection ? ' style="opacity:0.7;"' : ''}>`;
+    if (isWin && !isSettledSection) {
+      html += `<div class="fireworks-container" id="fw-${cardId}"></div>`;
+    }
+    if (isLoss2) {
+      html += `<div class="loser-stamp">LOSER</div>`;
     }
 
-    // Status row: period, status, token
     const currentDelay = gameDelays[game.id] || 0;
     const delayHtml = isLive ? `<div class="delay-control">
       <button class="delay-btn" onclick="adjustDelay('${game.id}', -5)">−</button>
@@ -2056,7 +2203,7 @@ function renderTracker(games) {
       <button class="delay-btn" onclick="adjustDelay('${game.id}', 5)">+</button>
     </div>` : '';
 
-    cardsHtml += `<div class="tracker-status-row">
+    html += `<div class="tracker-status-row">
       <div class="tracker-status-left">
         ${genderBadge}
         <span class="tracker-period-label">${periodLabel}</span>
@@ -2069,96 +2216,39 @@ function renderTracker(games) {
       </div>
     </div>`;
 
-    // Main layout: AWAY team | bar | HOME team
-    if (line !== '' && line !== null && line !== undefined) {
-      cardsHtml += `<div class="tracker-bar-row">
-        <div class="tracker-team-side">
-          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
-          <span class="t-name">${game.away.abbreviation || game.away.name}</span>
-          ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
-        </div>
-        <div class="tracker-bar-center">
-          ${sideLabel ? `<div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss ? ' lost' : ''}">${sideLabel} ${line}</span></div>` : ''}
-          ${(() => {
-            if (!showScore) return `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`;
-            // For 2H, slider starts at the 1H score (already locked in)
-            const sliderStart = activePeriod === '2h' ? getFirstHalfScore(game) : 0;
-            return renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss);
-          })()}
-        </div>
-        <div class="tracker-team-side">
-          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
-          <span class="t-name">${game.home.abbreviation || game.home.name}</span>
-          ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
-        </div>
-      </div>`;
-    } else {
-      cardsHtml += `<div class="tracker-bar-row">
-        <div class="tracker-team-side">
-          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
-          <span class="t-name">${game.away.abbreviation || game.away.name}</span>
-        </div>
-        <div class="tracker-bar-center">
-          <div class="tracker-no-bet-card">No bet for this period</div>
-        </div>
-        <div class="tracker-team-side">
-          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
-          <span class="t-name">${game.home.abbreviation || game.home.name}</span>
-        </div>
-      </div>`;
-    }
+    // Slider start: 1H=0, Full=0, 2H=first half score
+    const sliderStart = period === '2h' ? getFirstHalfScore(game) : 0;
 
-    cardsHtml += `</div>`;
-  });
+    html += `<div class="tracker-bar-row">
+      <div class="tracker-team-side">
+        ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+        <span class="t-name">${game.away.abbreviation || game.away.name}</span>
+        ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
+      </div>
+      <div class="tracker-bar-center">
+        <div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span></div>
+        ${!showScore
+          ? `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`
+          : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
+        }
+      </div>
+      <div class="tracker-team-side">
+        ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+        <span class="t-name">${game.home.abbreviation || game.home.name}</span>
+        ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
+      </div>
+    </div>`;
 
-  // Settled games section (pushed down after 1 min)
-  if (settledGames.length) {
+    html += `</div>`;
+    return html;
+  }
+
+  activeBets.forEach(entry => { cardsHtml += renderBetCard(entry, false); });
+
+  // Settled bets section (pushed down after 1 min)
+  if (settledBets.length) {
     cardsHtml += `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:12px 0 6px;margin-top:8px;">Settled</div>`;
-    settledGames.forEach(game => {
-      const activePeriod = getActivePeriod(game);
-      const line = getPick(game.id, activePeriod);
-      const side = getSide(game.id, activePeriod);
-      const actual = calcHalfScore(game, activePeriod);
-      const complete = isHalfComplete(game, activePeriod);
-      const { diff, result } = getResult(line, actual, complete, false);
-      const isWin = result && result !== 'push' && side && side === result;
-      const isLoss = result && result !== 'push' && side && side !== result;
-      const sideLabel = side ? (side === 'over' ? 'OVER' : 'UNDER') : '';
-
-      let tokenHtml = '';
-      if (result === 'push') tokenHtml = `<span class="tracker-token push">PUSH</span>`;
-      else if (isWin) tokenHtml = `<span class="tracker-token win">WIN</span>`;
-      else if (isLoss) tokenHtml = `<span class="tracker-token loss">LOSS</span>`;
-
-      const diffSign = diff > 0 ? '+' : '';
-      const diffClass = diff > 0 ? 'over' : diff < 0 ? 'under' : 'push';
-
-      const gb = currentGender === 'both' && game.gender
-        ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
-        : '';
-
-      cardsHtml += `<div class="tracker-card" style="opacity:0.7;">
-        <div class="tracker-bar-row">
-          <div class="tracker-team-side">
-            ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
-            <span class="t-name">${game.away.abbreviation || game.away.name}</span>
-            <span class="t-score">${game.away.score}</span>
-          </div>
-          <div class="tracker-bar-center" style="text-align:center;">
-            ${gb}
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);">Final ${actual}</div>
-            <div style="font-size:0.72rem;font-weight:700;" class="${side}">${sideLabel} ${line}</div>
-            <div class="diff-value ${diffClass}" style="font-size:0.9rem;font-weight:800;">${diffSign}${diff !== null ? diff.toFixed(1) : ''}</div>
-            ${tokenHtml}
-          </div>
-          <div class="tracker-team-side">
-            ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
-            <span class="t-name">${game.home.abbreviation || game.home.name}</span>
-            <span class="t-score">${game.home.score}</span>
-          </div>
-        </div>
-      </div>`;
-    });
+    settledBets.forEach(entry => { cardsHtml += renderBetCard(entry, true); });
   }
 
   document.getElementById('gamesList').innerHTML = `
@@ -2181,16 +2271,14 @@ function renderTracker(games) {
     newScores[game.id] = total;
   });
 
-  // Find games where score changed and trigger flash
+  // Find games where score changed and trigger flash on ALL sliders for that game
   Object.keys(newScores).forEach(gameId => {
     if (prevScores[gameId] !== undefined && prevScores[gameId] !== newScores[gameId]) {
-      const track = document.querySelector(`.slider-track[data-game-id="${gameId}"]`);
-      if (track) {
+      document.querySelectorAll(`.slider-track[data-game-id^="${gameId}_"]`).forEach(track => {
         track.classList.remove('flash');
-        // Force reflow to restart animation
         void track.offsetWidth;
         track.classList.add('flash');
-      }
+      });
     }
   });
 
@@ -2205,16 +2293,11 @@ function renderTracker(games) {
   });
 
   // Play air horn for NEW wins (wins that weren't wins on the previous render)
-  bettedGames.forEach(game => {
-    const activePeriod = getActivePeriod(game);
-    const line = getPick(game.id, activePeriod);
-    const side = getSide(game.id, activePeriod);
-    const actual = calcHalfScore(game, activePeriod);
-    const complete = isHalfComplete(game, activePeriod);
-    const { result } = getResult(line, actual, complete, false);
-    const isWin = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side && side === result;
-    const isLoss = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side && side !== result;
-    const settleKey = `${game.id}_${activePeriod}`;
+  [...activeBets, ...settledBets].forEach(entry => {
+    const { game, period, side, result } = entry;
+    const isWin = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side === result;
+    const isLoss = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side !== result;
+    const settleKey = `${game.id}_${period}`;
     if (isWin && !prevSettled[settleKey]) {
       playAirHorn();
       setTimeout(() => showTipPopup(), 3000);
@@ -2522,7 +2605,7 @@ async function loadCurrentView() {
 
   document.getElementById('dateNav').style.display = currentDateMode !== 'all' ? 'flex' : 'none';
   document.getElementById('dateEndPicker').style.display = currentDateMode === 'range' ? 'inline-flex' : 'none';
-  document.getElementById('summary').style.display = currentTab === 'input' ? '' : 'none';
+  document.getElementById('summary').style.display = 'none';
   document.getElementById('expandAll').style.display = currentTab === 'input' ? '' : 'none';
 
   const games = await fetchGamesByFilters();
