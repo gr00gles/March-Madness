@@ -686,6 +686,68 @@ body {
 .result-badge.win { background: rgba(34,197,94,0.15); color: var(--over); }
 .result-badge.loss { background: rgba(239,68,68,0.15); color: var(--under); }
 
+/* Winner row */
+tr.winner-separator td {
+  border: none;
+  padding: 2px 0;
+  border-top: 1px dashed var(--border);
+}
+
+.team-pick-toggle {
+  display: flex;
+  background: var(--input-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.team-pick-btn {
+  padding: 3px 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.team-pick-btn:hover { color: var(--text); }
+.team-pick-btn.active { background: var(--accent); color: #fff; }
+
+.winner-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.winner-type-toggle {
+  display: flex;
+  background: var(--input-bg);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.type-btn {
+  padding: 2px 5px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.type-btn:hover { color: var(--text); }
+.type-btn.active { background: var(--accent); color: #fff; }
+
+tr.locked-row .team-pick-btn,
+tr.locked-row .type-btn {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* Slider flash animation */
 @keyframes sliderFlash {
   0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.6); }
@@ -1075,11 +1137,9 @@ body {
   letter-spacing: 0.5px;
 }
 
-.tracker-bet-tag.over, .tracker-bet-tag.under { background: rgba(255,255,255,0.08); color: var(--text); }
-.tracker-bet-tag.over.won { background: rgba(34,197,94,0.2); color: var(--over); }
-.tracker-bet-tag.under.won { background: rgba(34,197,94,0.2); color: var(--over); }
-.tracker-bet-tag.over.lost { background: rgba(239,68,68,0.2); color: var(--under); }
-.tracker-bet-tag.under.lost { background: rgba(239,68,68,0.2); color: var(--under); }
+.tracker-bet-tag.over, .tracker-bet-tag.under, .tracker-bet-tag.winner { background: rgba(255,255,255,0.08); color: var(--text); }
+.tracker-bet-tag.over.won, .tracker-bet-tag.under.won, .tracker-bet-tag.winner.won { background: rgba(34,197,94,0.2); color: var(--over); }
+.tracker-bet-tag.over.lost, .tracker-bet-tag.under.lost, .tracker-bet-tag.winner.lost { background: rgba(239,68,68,0.2); color: var(--under); }
 
 
 /* The slider bar */
@@ -1964,6 +2024,69 @@ function getSide(gameId, period) {
   return picksCache[gameId]?.[period + '_side'] ?? '';
 }
 
+// --- Winner Bet Functions ---
+function saveWinnerPick(gameId, field, value) {
+  const picks = loadPicks();
+  if (!picks[gameId]) picks[gameId] = {};
+  if (value === '' || value === null || value === undefined) {
+    delete picks[gameId][field];
+  } else {
+    picks[gameId][field] = value;
+  }
+  savePicks(picks);
+}
+
+function getWinnerPick(gameId) {
+  const data = picksCache[gameId] || {};
+  return {
+    team: data.winner_team || '',
+    type: data.winner_type || 'spread',
+    spread: data.winner_spread ?? '',
+  };
+}
+
+function hasWinnerBet(gameId) {
+  const wp = getWinnerPick(gameId);
+  return wp.team !== '' && (wp.type === 'ml' || (wp.type === 'spread' && wp.spread !== '' && wp.spread !== null));
+}
+
+function calcWinnerResult(game, pick) {
+  if (!pick.team) return { diff: null, result: null };
+  const isFinal = game.state === 'post';
+  const isLive = game.state === 'in';
+  if (!isFinal && !isLive) return { diff: null, result: 'pending' };
+
+  const pickedSide = pick.team; // 'away' or 'home'
+  const otherSide = pickedSide === 'away' ? 'home' : 'away';
+  const pickedScore = game[pickedSide].score;
+  const otherScore = game[otherSide].score;
+
+  if (pick.type === 'ml') {
+    // Moneyline: just who's winning/won
+    const diff = pickedScore - otherScore;
+    if (!isFinal) {
+      if (diff > 0) return { diff, result: 'pacing-win' };
+      if (diff < 0) return { diff, result: 'pacing-loss' };
+      return { diff: 0, result: 'pacing-push' };
+    }
+    if (diff > 0) return { diff, result: 'win' };
+    if (diff < 0) return { diff, result: 'loss' };
+    return { diff: 0, result: 'push' };
+  }
+
+  // Spread: picked team score + spread vs opponent
+  const spread = parseFloat(pick.spread) || 0;
+  const adjustedDiff = (pickedScore + spread) - otherScore;
+  if (!isFinal) {
+    if (adjustedDiff > 0) return { diff: adjustedDiff, result: 'pacing-win' };
+    if (adjustedDiff < 0) return { diff: adjustedDiff, result: 'pacing-loss' };
+    return { diff: 0, result: 'pacing-push' };
+  }
+  if (adjustedDiff > 0) return { diff: adjustedDiff, result: 'win' };
+  if (adjustedDiff < 0) return { diff: adjustedDiff, result: 'loss' };
+  return { diff: 0, result: 'push' };
+}
+
 // --- ESPN API ---
 function formatDateParam(date) {
   const y = date.getFullYear();
@@ -2324,6 +2447,87 @@ function renderOUTable(game) {
       </tr>`;
   });
 
+  // --- Winner Row ---
+  const wp = getWinnerPick(game.id);
+  const winnerLocked = game.state === 'post';
+  const winnerResult = calcWinnerResult(game, wp);
+
+  let winnerResultHtml = '';
+  if (winnerResult.result && winnerResult.result !== 'pending') {
+    const isPacing = winnerResult.result.startsWith('pacing-');
+    const base = isPacing ? winnerResult.result.replace('pacing-', '') : winnerResult.result;
+    if (isPacing) {
+      winnerResultHtml = `<span class="result-badge ${base === 'win' ? 'over' : base === 'loss' ? 'under' : 'push'}">PACING ${base.toUpperCase()}</span>`;
+    } else if (base === 'win') {
+      winnerResultHtml = `<span class="result-badge win">WIN</span>`;
+    } else if (base === 'loss') {
+      winnerResultHtml = `<span class="result-badge loss">LOSS</span>`;
+    } else {
+      winnerResultHtml = `<span class="result-badge push">PUSH</span>`;
+    }
+  }
+
+  let winnerDiffHtml = '-';
+  if (winnerResult.diff !== null && hasWinnerBet(game.id)) {
+    const sign = winnerResult.diff > 0 ? '+' : '';
+    const cls = winnerResult.diff > 0 ? 'over' : winnerResult.diff < 0 ? 'under' : 'push';
+    winnerDiffHtml = `<span class="diff-value ${cls}">${sign}${winnerResult.diff.toFixed(1)}</span>`;
+  }
+
+  const awayAbbr = game.away.abbreviation || game.away.name.slice(0, 3).toUpperCase();
+  const homeAbbr = game.home.abbreviation || game.home.name.slice(0, 3).toUpperCase();
+
+  // Parse ESPN spread to get a default value
+  let defaultSpread = '';
+  if (game.spread) {
+    const spreadMatch = game.spread.match(/([-+]?\d+\.?\d*)/);
+    if (spreadMatch) defaultSpread = spreadMatch[1];
+  }
+
+  const teamPickHtml = winnerLocked
+    ? `<div class="team-pick-toggle locked">
+        <button class="team-pick-btn ${wp.team === 'away' ? 'active' : ''}" disabled>${awayAbbr}</button>
+        <button class="team-pick-btn ${wp.team === 'home' ? 'active' : ''}" disabled>${homeAbbr}</button>
+      </div>`
+    : `<div class="team-pick-toggle">
+        <button class="team-pick-btn ${wp.team === 'away' ? 'active' : ''}" onclick="onWinnerTeamChange('${game.id}', 'away', this)">${awayAbbr}</button>
+        <button class="team-pick-btn ${wp.team === 'home' ? 'active' : ''}" onclick="onWinnerTeamChange('${game.id}', 'home', this)">${homeAbbr}</button>
+      </div>`;
+
+  const typeToggleHtml = winnerLocked
+    ? `<div class="winner-type-toggle locked">
+        <button class="type-btn ${wp.type === 'spread' ? 'active' : ''}" disabled>SPR</button>
+        <button class="type-btn ${wp.type === 'ml' ? 'active' : ''}" disabled>ML</button>
+      </div>`
+    : `<div class="winner-type-toggle">
+        <button class="type-btn ${wp.type !== 'ml' ? 'active' : ''}" onclick="onWinnerTypeChange('${game.id}', 'spread', this)">SPR</button>
+        <button class="type-btn ${wp.type === 'ml' ? 'active' : ''}" onclick="onWinnerTypeChange('${game.id}', 'ml', this)">ML</button>
+      </div>`;
+
+  const spreadInputHtml = wp.type === 'ml'
+    ? `<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;">—</span>`
+    : `<input class="ou-input" type="number" step="0.5" value="${wp.spread}" placeholder="${defaultSpread || '—'}" data-game="${game.id}" onblur="onWinnerSpreadChange(this)"${winnerLocked ? ' disabled' : ''}>`;
+
+  const winnerScore = game.state !== 'pre' && wp.team ? `${game[wp.team]?.score ?? '-'}` : '-';
+
+  const winnerRowClass = winnerLocked ? 'locked-row' : '';
+
+  rows += `
+    <tr class="winner-separator"><td colspan="6"></td></tr>
+    <tr${winnerRowClass ? ` class="${winnerRowClass}"` : ''}>
+      <td class="period-label">Winner</td>
+      <td>${teamPickHtml}</td>
+      <td>
+        <div class="winner-input-group">
+          ${typeToggleHtml}
+          ${spreadInputHtml}
+        </div>
+      </td>
+      <td>${winnerScore}</td>
+      <td>${winnerDiffHtml}</td>
+      <td>${winnerResultHtml}</td>
+    </tr>`;
+
   const vegasHint = game.vegasOU ? `<div class="vegas-hint">Vegas O/U: ${game.vegasOU}${game.spread ? ` | Spread: ${game.spread}` : ''}</div>` : '';
 
   return `
@@ -2466,9 +2670,22 @@ function renderTracker(games) {
       else if (result === side) totalWins++;
       else totalLosses++;
     });
+
+    // Count winner bets
+    if (hasWinnerBet(game.id)) {
+      const wp = getWinnerPick(game.id);
+      const wResult = calcWinnerResult(game, wp);
+      if (wResult.result === 'win') totalWins++;
+      else if (wResult.result === 'loss') totalLosses++;
+      else if (wResult.result === 'push') totalPushes++;
+      else if (wResult.result === 'pacing-win') totalWins++;
+      else if (wResult.result === 'pacing-loss') totalLosses++;
+      else if (wResult.result && wResult.result !== 'pending') totalInProgress++;
+      else totalPending++;
+    }
   });
 
-  const allBetted = games.filter(game => ['1h', '2h', 'full'].some(p => hasBet(game.id, p)));
+  const allBetted = games.filter(game => ['1h', '2h', 'full'].some(p => hasBet(game.id, p)) || hasWinnerBet(game.id));
 
   if (!allBetted.length) {
     document.getElementById('gamesList').innerHTML = `<div class="no-games"><h3>No bets entered</h3><p>Go to "Input" view to enter your lines and pick O/U.</p></div>`;
@@ -2509,6 +2726,30 @@ function renderTracker(games) {
         activeBets.push(entry);
       }
     });
+
+    // Winner bet
+    if (hasWinnerBet(game.id)) {
+      const wp = getWinnerPick(game.id);
+      const wResult = calcWinnerResult(game, wp);
+      const complete = game.state === 'post';
+      const inProgress = game.state === 'in';
+      const isSettled = complete && wResult.result && wResult.result !== 'pending' && !wResult.result.startsWith('pacing-');
+      const entry = {
+        game, period: 'winner', line: wp.type === 'ml' ? 'ML' : wp.spread,
+        side: wp.team, actual: game[wp.team]?.score || 0,
+        complete, inProgress, diff: wResult.diff, result: wResult.result, isSettled,
+        isWinnerBet: true, winnerPick: wp,
+      };
+      if (isSettled) {
+        const winKey = `${game.id}_winner_settled`;
+        if (!winTimestamps[winKey]) winTimestamps[winKey] = now;
+        const elapsed = now - winTimestamps[winKey];
+        if (elapsed < 60000) activeBets.push(entry);
+        else settledBets.push(entry);
+      } else {
+        activeBets.push(entry);
+      }
+    }
   });
 
   // Sort active bets: live closest to line first, then pre-game
@@ -2537,12 +2778,21 @@ function renderTracker(games) {
       ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
       : '';
 
-    const periodLabel = period === '1h' ? '1ST HALF' : period === '2h' ? '2ND HALF' : 'FULL GAME';
-    const showScore = game.state !== 'pre' && (period === 'full' || game.away.linescores.length > (period === '1h' ? 0 : 1));
+    const isWinnerBet = entry.isWinnerBet;
+    const periodLabel = isWinnerBet ? 'WINNER' : period === '1h' ? '1ST HALF' : period === '2h' ? '2ND HALF' : 'FULL GAME';
+    const showScore = game.state !== 'pre' && (isWinnerBet || period === 'full' || game.away.linescores.length > (period === '1h' ? 0 : 1));
     const scoreToShow = showScore ? actual : 0;
 
-    const sideLabel = side === 'over' ? 'OVER' : 'UNDER';
-    const sideClass = side;
+    let sideLabel, sideClass;
+    if (isWinnerBet) {
+      const wp = entry.winnerPick;
+      const teamAbbr = game[wp.team]?.abbreviation || game[wp.team]?.name?.slice(0,3).toUpperCase() || wp.team;
+      sideLabel = wp.type === 'ml' ? `${teamAbbr} ML` : `${teamAbbr} ${wp.spread > 0 ? '+' : ''}${wp.spread}`;
+      sideClass = 'winner';
+    } else {
+      sideLabel = side === 'over' ? 'OVER' : 'UNDER';
+      sideClass = side;
+    }
 
     // Token
     let tokenHtml = '';
@@ -2551,7 +2801,11 @@ function renderTracker(games) {
       const baseResult = isPacing ? result.replace('pacing-', '') : result;
       if (isPacing) tokenHtml = `<span class="tracker-token live">LIVE</span>`;
       else if (baseResult === 'push') tokenHtml = `<span class="tracker-token push">PUSH</span>`;
-      else {
+      else if (isWinnerBet) {
+        tokenHtml = baseResult === 'win'
+          ? `<span class="tracker-token win">WIN</span>`
+          : `<span class="tracker-token loss">LOSS</span>`;
+      } else {
         tokenHtml = side === baseResult
           ? `<span class="tracker-token win">WIN</span>`
           : `<span class="tracker-token loss">LOSS</span>`;
@@ -2560,14 +2814,18 @@ function renderTracker(games) {
       tokenHtml = `<span class="tracker-token pending">PRE</span>`;
     }
 
-    const isSettledWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side === result;
-    const isPacingWin = side === 'over' && result === 'pacing-over';
-    const isWin = isSettledWin || isPacingWin;
-    const isSettledLoss = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side !== result;
-    // Under bet is instantly lost when score goes over the line (can't come back down)
-    const isPacingLoss = side === 'under' && result === 'pacing-over';
-    const isLoss2 = isSettledLoss || isPacingLoss;
-
+    let isWin, isLoss2;
+    if (isWinnerBet) {
+      isWin = result === 'win' || result === 'pacing-win';
+      isLoss2 = result === 'loss' || result === 'pacing-loss';
+    } else {
+      const isSettledWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side === result;
+      const isPacingWin = side === 'over' && result === 'pacing-over';
+      isWin = isSettledWin || isPacingWin;
+      const isSettledLoss = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side !== result;
+      const isPacingLoss = side === 'under' && result === 'pacing-over';
+      isLoss2 = isSettledLoss || isPacingLoss;
+    }
     const dateLabel = currentDateMode !== 'single'
       ? `<span style="font-size:0.6rem;color:var(--text-muted)">${formatDateDisplay(new Date(game.date))}</span>`
       : '';
@@ -2608,13 +2866,13 @@ function renderTracker(games) {
 
     if (isSettledSection) {
       // Compact settled card: single row with key info
-      const diffVal = actual - parseFloat(line);
+      const diffVal = isWinnerBet ? (diff || 0) : actual - parseFloat(line);
       const diffSign = diffVal > 0 ? '+' : '';
       const diffRounded = diffVal < 0 ? -Math.ceil(Math.abs(diffVal)) : (diffVal > 0 ? Math.ceil(diffVal) : 0);
       const resultClass = isWin ? 'over' : isLoss2 ? 'under' : 'push';
       const resultLabel = isWin ? 'WIN' : isLoss2 ? 'LOSS' : 'PUSH';
 
-      const settledPeriodHtml = period === '1h' ? '1ST<br>HALF' : period === '2h' ? '2ND<br>HALF' : 'FULL<br>GAME';
+      const settledPeriodHtml = isWinnerBet ? 'WIN<br>NER' : period === '1h' ? '1ST<br>HALF' : period === '2h' ? '2ND<br>HALF' : 'FULL<br>GAME';
 
       html += `<div class="settled-compact">
         <div class="settled-period-vert">${settledPeriodHtml}</div>
@@ -2622,7 +2880,7 @@ function renderTracker(games) {
           ${game.away.logo ? `<img class="settled-logo" src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
           <span class="settled-abbr">${game.away.abbreviation || game.away.name.slice(0,3).toUpperCase()}</span>
         </div>
-        <span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span>
+        <span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${isWinnerBet ? sideLabel : sideLabel + ' ' + line}</span>
         <div class="settled-team-col">
           ${game.home.logo ? `<img class="settled-logo" src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
           <span class="settled-abbr">${game.home.abbreviation || game.home.name.slice(0,3).toUpperCase()}</span>
@@ -2653,7 +2911,7 @@ function renderTracker(games) {
       </div>`;
 
       // Slider start: 1H=0, Full=0, 2H=first half score
-      const sliderStart = period === '2h' ? getFirstHalfScore(game) : 0;
+      const sliderStart = isWinnerBet ? 0 : (period === '2h' ? getFirstHalfScore(game) : 0);
 
       html += `<div class="tracker-bar-row">
         <div class="tracker-team-side">
@@ -2662,10 +2920,12 @@ function renderTracker(games) {
           ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
         </div>
         <div class="tracker-bar-center">
-          <div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span></div>
+          <div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${isWinnerBet ? sideLabel : sideLabel + ' ' + line}</span></div>
           ${!showScore
             ? `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`
-            : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
+            : isWinnerBet
+              ? `<div style="text-align:center;padding:6px 0;font-size:0.85rem;font-weight:700;color:var(--text);">${game.away.score} - ${game.home.score}${diff !== null ? ` <span class="diff-value ${isWin ? 'over' : isLoss2 ? 'under' : ''}">(${diff > 0 ? '+' : ''}${diff.toFixed(1)})</span>` : ''}</div>`
+              : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
           }
         </div>
         <div class="tracker-team-side">
@@ -2778,8 +3038,20 @@ function renderTracker(games) {
       }
     }
 
+    // Winner bets: horn on win, loss sound on loss (only at settlement)
+    if (entry.isWinnerBet && !prevSettled[settleKey] && complete) {
+      if (result === 'win') {
+        playAirHorn();
+        setTimeout(() => showTipPopup(), 3000);
+        prevSettled[settleKey] = true;
+      } else if (result === 'loss') {
+        playLossSound();
+        prevSettled[settleKey] = true;
+      }
+    }
+
     // Push
-    if (complete && result === 'push' && !prevSettled[settleKey]) {
+    if (complete && (result === 'push') && !prevSettled[settleKey]) {
       prevSettled[settleKey] = true;
     }
   });
@@ -3149,6 +3421,30 @@ function onSideChange(btn) {
   } else {
     renderSummary(getAllCachedGames());
   }
+}
+
+function onWinnerTeamChange(gameId, team, btn) {
+  const wp = getWinnerPick(gameId);
+  const newTeam = wp.team === team ? '' : team;
+  saveWinnerPick(gameId, 'winner_team', newTeam);
+  // Update buttons visually
+  const toggle = btn.parentElement;
+  toggle.querySelectorAll('.team-pick-btn').forEach(b => b.classList.remove('active'));
+  if (newTeam) btn.classList.add('active');
+  if (currentTab === 'tracker') refresh();
+}
+
+function onWinnerTypeChange(gameId, type, btn) {
+  saveWinnerPick(gameId, 'winner_type', type);
+  // Refresh to re-render the row (show/hide spread input)
+  refresh();
+}
+
+function onWinnerSpreadChange(input) {
+  const gameId = input.dataset.game;
+  const val = input.value === '' ? '' : parseFloat(input.value);
+  saveWinnerPick(gameId, 'winner_spread', val);
+  if (currentTab === 'tracker') refresh();
 }
 
 function toggleTrackerInput(chevron) {
