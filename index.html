@@ -780,19 +780,17 @@ tr.locked-row .type-btn {
   bottom: 0;
   border-radius: 14px;
   transition: width 0.5s ease, background 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 36px;
 }
 
-.spread-meter-ball {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 0.75rem;
+.spread-meter-diff {
+  font-size: 0.7rem;
   font-weight: 800;
-  color: #fff;
-  background: rgba(0,0,0,0.5);
-  padding: 2px 8px;
-  border-radius: 10px;
-  z-index: 3;
+  color: var(--text);
+  padding: 0 8px;
   white-space: nowrap;
 }
 
@@ -2741,8 +2739,9 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        <div class="spread-meter-fill-bar" style="width:${pct}%;background:${fillColor};"></div>
-        <div class="spread-meter-ball" style="left:${pct}%">${diffSign}${diffRound}</div>
+        <div class="spread-meter-fill-bar" style="width:${pct}%;background:${fillColor};">
+          <span class="spread-meter-diff">${diffSign}${diffRound}</span>
+        </div>
       </div>
     </div>`;
 }
