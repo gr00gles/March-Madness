@@ -3023,14 +3023,23 @@ function renderTracker(games) {
       // Slider start: 1H=0, Full=0, 2H=first half score
       const sliderStart = isWinnerBet ? 0 : (period === '2h' ? getFirstHalfScore(game) : 0);
 
-      // Scale winning team logo: 1x at tied, +0.1x per point lead, max 3x at 20+
-      const scoreDiff = game.away.score - game.home.score;
-      const lead = Math.abs(scoreDiff);
-      const scale = 1 + Math.min(lead, 20) * 0.1;
-      const awayScale = game.state !== 'pre' && scoreDiff > 0 ? scale : 1;
-      const homeScale = game.state !== 'pre' && scoreDiff < 0 ? scale : 1;
-      const awayLogoStyle = awayScale > 1 ? `style="transform:scale(${awayScale.toFixed(2)});transition:transform 0.5s ease;"` : '';
-      const homeLogoStyle = homeScale > 1 ? `style="transform:scale(${homeScale.toFixed(2)});transition:transform 0.5s ease;"` : '';
+      // Scale logos on winner bet cards only — based on adjusted spread diff, not raw score
+      let awayLogoStyle = '', homeLogoStyle = '';
+      if (isWinnerBet && game.state !== 'pre' && diff !== null) {
+        // diff > 0 = picked team covering, diff < 0 = not covering
+        const wp = entry.winnerPick;
+        const coverLead = Math.abs(diff);
+        const scale = 1 + Math.min(coverLead, 20) * 0.1;
+        if (diff > 0) {
+          // Picked team is covering — grow their logo
+          if (wp.team === 'away') awayLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
+          else homeLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
+        } else if (diff < 0) {
+          // Other team is winning against the spread — grow their logo
+          if (wp.team === 'away') homeLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
+          else awayLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
+        }
+      }
 
       html += `<div class="tracker-bar-row">
         <div class="tracker-team-side">
