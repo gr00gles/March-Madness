@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>March Madness O/U Tracker</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏀</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -131,9 +134,16 @@ body {
 .header h1 {
   font-size: 1.3rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), #fb923c);
+}
+
+.app-logo {
+  font-family: 'Bungee', cursive;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #22c55e, var(--accent), #ef4444);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
 }
 
 .user-section {
@@ -1455,7 +1465,7 @@ tr.needs-bet td:first-child {
 <div id="appContainer" style="display:none">
 <div class="header" id="mainHeader">
   <div class="header-top">
-    <img src="Over Under Tracker Banner.png" alt="Over Under Tracker" style="height:50px;">
+    <h1 class="app-logo">Over Under Tracker</h1>
     <div class="user-section" id="userSection">
       <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">🌙</button>
       <a href="https://buy.stripe.com/dRmaEX4eu2Dq4Hj0gYaAw00" target="_blank" class="btn-tip">🔥 Tip</a>
