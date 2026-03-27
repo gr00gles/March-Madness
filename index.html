@@ -748,6 +748,73 @@ tr.locked-row .type-btn {
   opacity: 0.5;
 }
 
+/* Spread gap meter */
+.spread-meter {
+  padding: 4px 0;
+}
+
+.spread-meter-track {
+  position: relative;
+  height: 24px;
+  background: rgba(239,68,68,0.15);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.spread-meter-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-muted);
+  opacity: 0.4;
+  z-index: 1;
+}
+
+.spread-meter-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 12px;
+  transition: width 0.5s ease;
+}
+
+.spread-meter-fill.spread-covering { background: rgba(34,197,94,0.25); }
+.spread-meter-fill.spread-behind { background: rgba(239,68,68,0.25); }
+.spread-meter-fill.spread-win { background: rgba(34,197,94,0.4); }
+.spread-meter-fill.spread-loss { background: rgba(239,68,68,0.4); }
+.spread-meter-fill.spread-neutral { background: rgba(234,179,8,0.25); }
+
+.spread-meter-ball {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.spread-meter-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.spread-meter-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.spread-meter-label.win { color: var(--over); }
+.spread-meter-label.loss { color: var(--under); }
+
 /* Slider flash animation */
 @keyframes sliderFlash {
   0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.6); }
@@ -2648,6 +2715,48 @@ function renderSlider(score, line, side, result, gameId, startFrom, isWin, isLos
     </div>`;
 }
 
+function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
+  if (!wp || !wp.team) return '';
+  const pickedSide = wp.team;
+  const otherSide = pickedSide === 'away' ? 'home' : 'away';
+  const pickedAbbr = game[pickedSide].abbreviation || game[pickedSide].name.slice(0, 3).toUpperCase();
+  const isMl = wp.type === 'ml';
+  const spread = isMl ? 0 : (parseFloat(wp.spread) || 0);
+
+  // adjustedDiff: positive = covering, negative = not covering
+  const adjustedDiff = diff !== null ? diff : 0;
+  // Map to a percentage: 0 = exactly on the line, 50% each side. Cap at ±15 pts
+  const maxRange = 15;
+  const clamped = Math.max(-maxRange, Math.min(maxRange, adjustedDiff));
+  const pct = 50 + (clamped / maxRange) * 50;
+
+  let fillClass = 'spread-neutral';
+  if (isWin) fillClass = 'spread-win';
+  else if (isLoss2) fillClass = 'spread-loss';
+  else if (adjustedDiff > 0) fillClass = 'spread-covering';
+  else if (adjustedDiff < 0) fillClass = 'spread-behind';
+
+  const diffSign = adjustedDiff > 0 ? '+' : '';
+  const diffRound = adjustedDiff !== 0 ? Math.round(adjustedDiff * 10) / 10 : 0;
+
+  const spreadLabel = isMl ? 'ML' : `${spread > 0 ? '+' : ''}${spread}`;
+  const statusText = adjustedDiff > 0 ? 'COVERING' : adjustedDiff < 0 ? 'NOT COVERING' : 'EVEN';
+
+  return `
+    <div class="spread-meter">
+      <div class="spread-meter-track">
+        <div class="spread-meter-center"></div>
+        <div class="spread-meter-fill ${fillClass}" style="width:${pct}%"></div>
+        <div class="spread-meter-ball" style="left:${pct}%">${diffSign}${diffRound}</div>
+      </div>
+      <div class="spread-meter-labels">
+        <span class="spread-meter-label loss">NOT COVERING</span>
+        <span class="spread-meter-label ${adjustedDiff > 0 ? 'over' : adjustedDiff < 0 ? 'under' : ''}" style="font-weight:700;">${pickedAbbr} ${spreadLabel}</span>
+        <span class="spread-meter-label win">COVERING</span>
+      </div>
+    </div>`;
+}
+
 function renderTracker(games) {
   let totalWins = 0, totalLosses = 0, totalPushes = 0, totalInProgress = 0, totalPending = 0;
 
@@ -2925,7 +3034,7 @@ function renderTracker(games) {
           ${!showScore
             ? `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`
             : isWinnerBet
-              ? `<div style="text-align:center;padding:6px 0;font-size:0.85rem;font-weight:700;color:var(--text);">${game.away.score} - ${game.home.score}${diff !== null ? ` <span class="diff-value ${isWin ? 'over' : isLoss2 ? 'under' : ''}">(${diff > 0 ? '+' : ''}${diff.toFixed(1)})</span>` : ''}</div>`
+              ? renderSpreadMeter(game, entry.winnerPick, diff, isWin, isLoss2)
               : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
           }
         </div>
