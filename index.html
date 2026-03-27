@@ -756,7 +756,7 @@ tr.locked-row .type-btn {
 .spread-meter-track {
   position: relative;
   height: 24px;
-  background: rgba(239,68,68,0.15);
+  background: rgba(255,255,255,0.06);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -772,20 +772,23 @@ tr.locked-row .type-btn {
   z-index: 1;
 }
 
-.spread-meter-fill {
+.spread-meter-fill-left {
   position: absolute;
-  left: 0;
+  right: 50%;
   top: 0;
   bottom: 0;
-  border-radius: 12px;
+  border-radius: 12px 0 0 12px;
   transition: width 0.5s ease;
 }
 
-.spread-meter-fill.spread-covering { background: rgba(34,197,94,0.25); }
-.spread-meter-fill.spread-behind { background: rgba(239,68,68,0.25); }
-.spread-meter-fill.spread-win { background: rgba(34,197,94,0.4); }
-.spread-meter-fill.spread-loss { background: rgba(239,68,68,0.4); }
-.spread-meter-fill.spread-neutral { background: rgba(234,179,8,0.25); }
+.spread-meter-fill-right {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-radius: 0 12px 12px 0;
+  transition: width 0.5s ease;
+}
 
 .spread-meter-ball {
   position: absolute;
@@ -2730,23 +2733,27 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   const clamped = Math.max(-maxRange, Math.min(maxRange, adjustedDiff));
   const pct = 50 + (clamped / maxRange) * 50;
 
-  let fillClass = 'spread-neutral';
-  if (isWin) fillClass = 'spread-win';
-  else if (isLoss2) fillClass = 'spread-loss';
-  else if (adjustedDiff > 0) fillClass = 'spread-covering';
-  else if (adjustedDiff < 0) fillClass = 'spread-behind';
-
   const diffSign = adjustedDiff > 0 ? '+' : '';
   const diffRound = adjustedDiff !== 0 ? Math.round(adjustedDiff * 10) / 10 : 0;
 
-  const spreadLabel = isMl ? 'ML' : `${spread > 0 ? '+' : ''}${spread}`;
-  const statusText = adjustedDiff > 0 ? 'COVERING' : adjustedDiff < 0 ? 'NOT COVERING' : 'EVEN';
+  // Fill from center: left = red (not covering), right = green (covering)
+  const fillPct = Math.abs(clamped) / maxRange * 50; // 0-50%
+  let fillHtml = '';
+  if (adjustedDiff < 0) {
+    // Red on left side of center
+    const color = isLoss2 ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.3)';
+    fillHtml = `<div class="spread-meter-fill-left" style="width:${fillPct}%;background:${color};"></div>`;
+  } else if (adjustedDiff > 0) {
+    // Green on right side of center
+    const color = isWin ? 'rgba(34,197,94,0.5)' : 'rgba(34,197,94,0.3)';
+    fillHtml = `<div class="spread-meter-fill-right" style="width:${fillPct}%;background:${color};"></div>`;
+  }
 
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        <div class="spread-meter-fill ${fillClass}" style="width:${pct}%"></div>
+        ${fillHtml}
         <div class="spread-meter-ball" style="left:${pct}%">${diffSign}${diffRound}</div>
       </div>
     </div>`;
