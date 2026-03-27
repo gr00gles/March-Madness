@@ -683,6 +683,61 @@ body {
   padding-top: 8px;
 }
 
+/* Compact settled cards */
+.tracker-card.settled-card {
+  padding: 8px 12px;
+  opacity: 0.75;
+}
+
+.settled-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settled-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settled-period {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settled-teams {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settled-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settled-score {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tracker-card.settled-card .tracker-chevron {
+  padding: 0;
+}
+
+.tracker-card.settled-card .tracker-ou-section {
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
 .tracker-chevron {
   display: flex;
   justify-content: center;
@@ -2192,64 +2247,95 @@ function renderTracker(games) {
     ].filter(Boolean).join(' ');
 
     const cardId = `${game.id}_${period}`;
-    let html = `<div class="${cardClasses}" data-game-id="${cardId}"${isSettledSection ? ' style="opacity:0.7;"' : ''}>`;
-    if (isWin) {
+    let html = `<div class="${cardClasses}" data-game-id="${cardId}">`;
+    if (isWin && !isSettledSection) {
       html += `<div class="fireworks-container" id="fw-${cardId}"></div>`;
     }
-    if (isLoss2) {
+    if (isLoss2 && !isSettledSection) {
       html += `<div class="loser-stamp">LOSER</div>`;
     }
 
     const currentDelay = gameDelays[game.id] || 0;
-    const delayHtml = isLive ? `<div class="delay-control">
+    const delayHtml = (isLive && !isSettledSection) ? `<div class="delay-control">
       <button class="delay-btn" onclick="adjustDelay('${game.id}', -5)">−</button>
       <span class="delay-value">${currentDelay > 0 ? currentDelay + 's' : '⏱'}</span>
       <button class="delay-btn" onclick="adjustDelay('${game.id}', 5)">+</button>
     </div>` : '';
 
-    html += `<div class="tracker-status-row">
-      <div class="tracker-status-left">
-        ${genderBadge}
-        <span class="tracker-period-label">${periodLabel}</span>
-        <span class="tracker-status ${statusClass}">${complete ? '' : (isLive ? '● ' : '') + game.statusText}</span>
-        ${dateLabel}
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        ${delayHtml}
-        ${tokenHtml}
-      </div>
-    </div>`;
+    if (isSettledSection) {
+      // Compact settled card: single row with key info
+      const diffVal = actual - parseFloat(line);
+      const diffSign = diffVal > 0 ? '+' : '';
+      const diffRounded = diffVal < 0 ? -Math.ceil(Math.abs(diffVal)) : (diffVal > 0 ? Math.ceil(diffVal) : 0);
+      const resultClass = isWin ? 'over' : isLoss2 ? 'under' : 'push';
+      const resultLabel = isWin ? 'WIN' : isLoss2 ? 'LOSS' : 'PUSH';
 
-    // Slider start: 1H=0, Full=0, 2H=first half score
-    const sliderStart = period === '2h' ? getFirstHalfScore(game) : 0;
+      html += `<div class="settled-compact">
+        <div class="settled-left">
+          ${genderBadge}
+          <span class="settled-period">${periodLabel}</span>
+          <span class="settled-teams">${game.away.abbreviation || game.away.name} vs ${game.home.abbreviation || game.home.name}</span>
+        </div>
+        <div class="settled-right">
+          <span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span>
+          <span class="settled-score">${actual}</span>
+          <span class="diff-value ${resultClass}">${diffSign}${diffRounded}</span>
+          <span class="tracker-token ${isWin ? 'win' : isLoss2 ? 'loss' : 'push'}">${resultLabel}</span>
+        </div>
+      </div>`;
 
-    html += `<div class="tracker-bar-row">
-      <div class="tracker-team-side">
-        ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
-        <span class="t-name">${game.away.abbreviation || game.away.name}</span>
-        ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
-      </div>
-      <div class="tracker-bar-center">
-        <div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span></div>
-        ${!showScore
-          ? `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`
-          : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
-        }
-      </div>
-      <div class="tracker-team-side">
-        ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
-        <span class="t-name">${game.home.abbreviation || game.home.name}</span>
-        ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
-      </div>
-    </div>`;
+      html += `<div class="tracker-ou-section" id="tracker-ou-${game.id}-${period}" style="display:none;">
+        ${renderOUTable(game)}
+      </div>`;
 
-    html += `<div class="tracker-ou-section" id="tracker-ou-${game.id}-${period}" style="display:none;">
-      ${renderOUTable(game)}
-    </div>`;
+      html += `<div class="tracker-chevron" onclick="toggleTrackerInput(this)">
+        <span class="tracker-chevron-icon">▼</span>
+      </div>`;
+    } else {
+      html += `<div class="tracker-status-row">
+        <div class="tracker-status-left">
+          ${genderBadge}
+          <span class="tracker-period-label">${periodLabel}</span>
+          <span class="tracker-status ${statusClass}">${complete ? '' : (isLive ? '● ' : '') + game.statusText}</span>
+          ${dateLabel}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${delayHtml}
+          ${tokenHtml}
+        </div>
+      </div>`;
 
-    html += `<div class="tracker-chevron" onclick="toggleTrackerInput(this)">
-      <span class="tracker-chevron-icon">▼</span>
-    </div>`;
+      // Slider start: 1H=0, Full=0, 2H=first half score
+      const sliderStart = period === '2h' ? getFirstHalfScore(game) : 0;
+
+      html += `<div class="tracker-bar-row">
+        <div class="tracker-team-side">
+          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="t-name">${game.away.abbreviation || game.away.name}</span>
+          ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
+        </div>
+        <div class="tracker-bar-center">
+          <div class="tracker-bet-line"><span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span></div>
+          ${!showScore
+            ? `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;">Waiting for tip-off</div>`
+            : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
+          }
+        </div>
+        <div class="tracker-team-side">
+          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="t-name">${game.home.abbreviation || game.home.name}</span>
+          ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
+        </div>
+      </div>`;
+
+      html += `<div class="tracker-ou-section" id="tracker-ou-${game.id}-${period}" style="display:none;">
+        ${renderOUTable(game)}
+      </div>`;
+
+      html += `<div class="tracker-chevron" onclick="toggleTrackerInput(this)">
+        <span class="tracker-chevron-icon">▼</span>
+      </div>`;
+    }
 
     html += `</div>`;
     return html;
