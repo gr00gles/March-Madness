@@ -2389,8 +2389,12 @@ function renderTracker(games) {
       const complete = isHalfComplete(game, period);
       const inProgress = isHalfInProgress(game, period);
       if (!complete && !inProgress) { totalPending++; return; }
+      const { result } = getResult(line, actual, complete, inProgress);
+      // Under bet busted live = instant loss
+      if (side === 'under' && result === 'pacing-over') { totalLosses++; return; }
+      // Over bet winning live = instant win
+      if (side === 'over' && result === 'pacing-over') { totalWins++; return; }
       if (!complete && inProgress) { totalInProgress++; return; }
-      const { result } = getResult(line, actual, complete, false);
       if (result === 'push') totalPushes++;
       else if (result === side) totalWins++;
       else totalLosses++;
@@ -2422,7 +2426,9 @@ function renderTracker(games) {
       const complete = isHalfComplete(game, period);
       const inProgress = isHalfInProgress(game, period);
       const { diff, result } = getResult(line, actual, complete, inProgress);
-      const isSettled = complete && result && result !== 'pending' && !result.startsWith('pacing-');
+      // Under bets are instantly settled when score crosses the line (can't come back)
+      const isPacingBust = side === 'under' && result === 'pacing-over';
+      const isSettled = isPacingBust || (complete && result && result !== 'pending' && !result.startsWith('pacing-'));
 
       const entry = { game, period, line, side, actual, complete, inProgress, diff, result, isSettled };
 
@@ -2490,25 +2496,21 @@ function renderTracker(games) {
     const isSettledWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side === result;
     const isPacingWin = side === 'over' && result === 'pacing-over';
     const isWin = isSettledWin || isPacingWin;
-    const isLoss2 = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side !== result;
+    const isSettledLoss = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side !== result;
+    // Under bet is instantly lost when score goes over the line (can't come back down)
+    const isPacingLoss = side === 'under' && result === 'pacing-over';
+    const isLoss2 = isSettledLoss || isPacingLoss;
 
     const dateLabel = currentDateMode !== 'single'
       ? `<span style="font-size:0.6rem;color:var(--text-muted)">${formatDateDisplay(new Date(game.date))}</span>`
       : '';
 
-    // Nervous when live and score is close to the line FROM THE LOSING SIDE
-    // Over bet: nervous when score is near/below line (danger of losing)
-    // Under bet: nervous when score is near/above line (danger of going over)
+    // Nervous when live, not yet won or lost, and score is close to the line
     const lineNum = parseFloat(line) || 0;
-    const rawDiff = actual - lineNum;
-    const dangerDiff = side === 'over'
-      ? (rawDiff <= 0 ? Math.abs(rawDiff) : -rawDiff)  // over: danger when below line, safe when above
-      : (rawDiff >= 0 ? rawDiff : -Math.abs(rawDiff));  // under: danger when above line, safe when below
-    // dangerDiff > 0 means in danger, dangerDiff <= 0 means safe
-    const isInDanger = inProgress && !complete && !isWin && !isLoss2 && dangerDiff >= 0 && dangerDiff <= 8;
-    const isNervous = isInDanger;
-    const isVeryNervous = isInDanger && dangerDiff <= 4;
-    const isPanic = isInDanger && dangerDiff <= 1;
+    const absDiff = Math.abs(actual - lineNum);
+    const isNervous = inProgress && !complete && !isWin && !isLoss2 && absDiff <= 8;
+    const isVeryNervous = isNervous && absDiff <= 4;
+    const isPanic = isNervous && absDiff <= 1;
 
     const cardClasses = [
       'tracker-card',
@@ -2679,13 +2681,17 @@ function renderTracker(games) {
       }
     }
 
-    // Under bet: only fire when the period is complete
-    if (side === 'under' && !prevSettled[settleKey] && complete) {
-      if (result === 'under') {
+    // Under bet: loss plays instantly when score crosses line, win only at period end
+    if (side === 'under' && !prevSettled[settleKey]) {
+      if (result === 'pacing-over') {
+        // Busted - score went over the line during live play
+        playLossSound();
+        prevSettled[settleKey] = true;
+      } else if (complete && result === 'under') {
         playAirHorn();
         setTimeout(() => showTipPopup(), 3000);
         prevSettled[settleKey] = true;
-      } else if (result === 'over') {
+      } else if (complete && result === 'over') {
         playLossSound();
         prevSettled[settleKey] = true;
       }
