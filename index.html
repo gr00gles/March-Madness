@@ -2171,7 +2171,7 @@ function renderTracker(games) {
     }
 
     const isSettledWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side === result;
-    const isPacingWin = result === `pacing-${side}`;
+    const isPacingWin = side === 'over' && result === 'pacing-over';
     const isWin = isSettledWin || isPacingWin;
     const isLoss2 = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side !== result;
 
