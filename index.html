@@ -797,13 +797,23 @@ tr.locked-row .type-btn {
   z-index: 2;
 }
 
-.spread-meter-fill-bar.spread-pulse {
-  animation: spreadPulse var(--pulse-speed, 1.5s) ease-in-out infinite;
+.spread-meter-fill-bar.spread-heartbeat::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255,255,255,0.5);
+  animation: heartbeatSweep var(--pulse-speed, 1.5s) ease-in-out infinite;
 }
 
-@keyframes spreadPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes heartbeatSweep {
+  0% { right: 100%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { right: 0%; opacity: 0; }
 }
 
 .spread-meter-labels {
@@ -2747,17 +2757,17 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   if (adjustedDiff > 0) fillColor = isWin ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.4)';
   else if (adjustedDiff < 0) fillColor = isLoss2 ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.4)';
 
-  // Pulse speed: closer to even = faster pulse (more tense), bigger lead = slower
-  // 0 pts diff = 0.3s (frantic), 15+ pts = 2.5s (calm), linear scale
+  // Heartbeat sweep on the losing side: closer to even = faster sweep
+  // 0 pts = 0.4s (frantic), 15+ pts = 2.5s (slow)
   const absCover = Math.abs(adjustedDiff);
-  const pulseSpeed = (0.3 + Math.min(absCover, 15) * (2.2 / 15)).toFixed(2);
-  const pulseClass = adjustedDiff !== 0 ? 'spread-pulse' : '';
+  const sweepSpeed = (0.4 + Math.min(absCover, 15) * (2.1 / 15)).toFixed(2);
+  const heartbeatClass = adjustedDiff < 0 ? 'spread-heartbeat' : '';
 
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        <div class="spread-meter-fill-bar ${pulseClass}" style="width:${pct}%;background:${fillColor};--pulse-speed:${pulseSpeed}s;"></div>
+        <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${pct}%;background:${fillColor};--pulse-speed:${sweepSpeed}s;"></div>
         <span class="spread-meter-diff">${diffSign}${diffRound}</span>
       </div>
     </div>`;
