@@ -2753,7 +2753,8 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   } else if (adjustedDiff < 0) {
     // Wave gradient for losing side
     const absCover = Math.abs(adjustedDiff);
-    const sweepSpeed = (0.8 + Math.min(absCover, 15) * (2.2 / 15)).toFixed(2);
+    // Close to line = slow (tense), far behind = fast (urgent)
+    const sweepSpeed = (4 - Math.min(absCover, 15) * (2.5 / 15)).toFixed(2);
     const baseAlpha = isLoss2 ? '0.6' : '0.35';
     const waveAlpha = isLoss2 ? '0.85' : '0.6';
     fillStyle = `background:linear-gradient(90deg, rgba(239,68,68,${baseAlpha}) 0%, rgba(255,100,100,${waveAlpha}) 25%, rgba(239,68,68,${baseAlpha}) 50%, rgba(200,50,50,${waveAlpha}) 75%, rgba(239,68,68,${baseAlpha}) 100%);background-size:200% 100%;--pulse-speed:${sweepSpeed}s;`;
