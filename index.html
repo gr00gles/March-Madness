@@ -3023,9 +3023,18 @@ function renderTracker(games) {
       // Slider start: 1H=0, Full=0, 2H=first half score
       const sliderStart = isWinnerBet ? 0 : (period === '2h' ? getFirstHalfScore(game) : 0);
 
+      // Scale winning team logo based on score lead (1.0 to 1.8x)
+      const scoreDiff = game.away.score - game.home.score;
+      const lead = Math.abs(scoreDiff);
+      const maxLead = 20; // at 20+ pts lead, logo is max size
+      const awayScale = game.state !== 'pre' && scoreDiff > 0 ? 1 + Math.min(lead / maxLead, 1) * 0.8 : 1;
+      const homeScale = game.state !== 'pre' && scoreDiff < 0 ? 1 + Math.min(lead / maxLead, 1) * 0.8 : 1;
+      const awayLogoStyle = awayScale > 1 ? `style="transform:scale(${awayScale.toFixed(2)});transition:transform 0.5s ease;"` : '';
+      const homeLogoStyle = homeScale > 1 ? `style="transform:scale(${homeScale.toFixed(2)});transition:transform 0.5s ease;"` : '';
+
       html += `<div class="tracker-bar-row">
         <div class="tracker-team-side">
-          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'" ${awayLogoStyle}>` : ''}
           <span class="t-name">${game.away.abbreviation || game.away.name}</span>
           ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
         </div>
@@ -3039,7 +3048,7 @@ function renderTracker(games) {
           }
         </div>
         <div class="tracker-team-side">
-          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'" ${homeLogoStyle}>` : ''}
           <span class="t-name">${game.home.abbreviation || game.home.name}</span>
           ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
         </div>
