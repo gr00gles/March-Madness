@@ -2643,6 +2643,7 @@ function dismissTip(el) {
 const shownNotifications = new Set();
 let notifyQueue = [];
 let notifyActive = false;
+const halftimeStartTimes = {};
 
 function checkGameNotifications(games) {
   const now = Date.now();
@@ -2667,8 +2668,12 @@ function checkGameNotifications(games) {
       }
     }
 
-    // Halftime = 2H about to start
+    // Track when halftime starts, notify 5 min after
     if (game.statusText === 'Halftime') {
+      if (!halftimeStartTimes[game.id]) halftimeStartTimes[game.id] = now;
+    }
+    const htStart = halftimeStartTimes[game.id];
+    if (htStart && (game.statusText === 'Halftime') && (now - htStart >= 300000)) {
       const key = `${game.id}_2h_half`;
       if (!shownNotifications.has(key)) {
         shownNotifications.add(key);
@@ -2678,7 +2683,7 @@ function checkGameNotifications(games) {
         const warnHtml = unbetted.length
           ? `<div class="game-notify-warn">⚠ No bet placed: ${unbetted.join(', ')}</div>`
           : '';
-        queueNotify(`⏸️`, `Halftime`,
+        queueNotify(`⏸️`, `2H Starting Soon`,
           `${game.away.name} vs ${game.home.name}`, warnHtml);
       }
     }
