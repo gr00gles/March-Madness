@@ -2831,10 +2831,10 @@ function renderTracker(games) {
       ? `<span style="font-size:0.6rem;color:var(--text-muted)">${formatDateDisplay(new Date(game.date))}</span>`
       : '';
 
-    // Nervous when live, not yet won or lost, and score is close to the line
+    // Nervous when live, not yet won or lost, and score is close to the line (O/U bets only)
     const lineNum = parseFloat(line) || 0;
     const absDiff = Math.abs(actual - lineNum);
-    const isNervous = inProgress && !complete && !isWin && !isLoss2 && absDiff <= 8;
+    const isNervous = !isWinnerBet && inProgress && !complete && !isWin && !isLoss2 && absDiff <= 8;
     const isVeryNervous = isNervous && absDiff <= 4;
     const isPanic = isNervous && absDiff <= 1;
 
