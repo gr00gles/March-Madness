@@ -2114,7 +2114,7 @@ function renderTracker(games) {
         const winKey = `${game.id}_${period}_settled`;
         if (!winTimestamps[winKey]) winTimestamps[winKey] = now;
         const elapsed = now - winTimestamps[winKey];
-        if (elapsed < 300000) activeBets.push(entry);
+        if (elapsed < 60000) activeBets.push(entry);
         else settledBets.push(entry);
       } else {
         activeBets.push(entry);
