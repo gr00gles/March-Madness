@@ -283,9 +283,15 @@ body {
 
 .controls {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.controls-row {
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
   flex-wrap: wrap;
 }
 
@@ -1273,7 +1279,7 @@ body {
 /* Responsive */
 @media (max-width: 600px) {
   .header-top { flex-direction: column; align-items: flex-start; }
-  .controls { flex-direction: column; align-items: flex-start; }
+  .controls-row { flex-wrap: wrap; }
   .action-btns { margin-left: 0; width: 100%; justify-content: flex-start; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .ou-input { width: 60px; }
@@ -1530,31 +1536,35 @@ tr.needs-bet td:first-child {
     </div>
   </div>
   <div class="controls">
-    <div class="toggle-group" id="mainTabs">
-      <button class="toggle-btn active" data-value="input">Input</button>
-      <button class="toggle-btn" data-value="tracker">Bet Tracker</button>
+    <div class="controls-row">
+      <div class="toggle-group" id="mainTabs">
+        <button class="toggle-btn active" data-value="input">Input</button>
+        <button class="toggle-btn" data-value="tracker">Bet Tracker</button>
+      </div>
+      <div class="toggle-group" id="genderToggle">
+        <button class="toggle-btn active" data-value="mens">Men's</button>
+        <button class="toggle-btn" data-value="womens">Women's</button>
+        <button class="toggle-btn" data-value="both">Both</button>
+      </div>
+      <div class="action-btns">
+        <button class="btn-sm" id="expandAll">Expand All</button>
+      </div>
     </div>
-    <div class="toggle-group" id="genderToggle">
-      <button class="toggle-btn active" data-value="mens">Men's</button>
-      <button class="toggle-btn" data-value="womens">Women's</button>
-      <button class="toggle-btn" data-value="both">Both</button>
-    </div>
-    <div class="toggle-group" id="dateMode">
-      <button class="toggle-btn active" data-value="single">Date</button>
-      <button class="toggle-btn" data-value="range">Range</button>
-      <button class="toggle-btn" data-value="all">All Dates</button>
-    </div>
-    <div class="date-nav" id="dateNav">
-      <button id="prevDay">&larr;</button>
-      <span class="date-label" id="dateLabel"></span>
-      <button id="nextDay">&rarr;</button>
-    </div>
-    <div id="dateEndPicker" style="display:none">
-      <span class="tracker-date-label">to</span>
-      <input type="date" class="date-input" id="endDateInput" />
-    </div>
-    <div class="action-btns">
-      <button class="btn-sm" id="expandAll">Expand All</button>
+    <div class="controls-row">
+      <div class="toggle-group" id="dateMode">
+        <button class="toggle-btn active" data-value="single">Date</button>
+        <button class="toggle-btn" data-value="range">Range</button>
+        <button class="toggle-btn" data-value="all">All</button>
+      </div>
+      <div class="date-nav" id="dateNav">
+        <button id="prevDay">&larr;</button>
+        <span class="date-label" id="dateLabel"></span>
+        <button id="nextDay">&rarr;</button>
+      </div>
+      <div id="dateEndPicker" style="display:none">
+        <span class="tracker-date-label">to</span>
+        <input type="date" class="date-input" id="endDateInput" />
+      </div>
     </div>
     <div class="refresh-info">
       <span id="liveDot" class="live-dot" style="display:none"></span>
