@@ -468,6 +468,7 @@ body {
 }
 
 .game-status.live { color: var(--live); }
+.game-status.halftime { color: #eab308; }
 .game-status.pre { color: var(--text-muted); }
 .game-status.final { color: var(--text-muted); }
 
@@ -827,6 +828,7 @@ body {
 }
 
 .tracker-status.live { color: var(--live); }
+.tracker-status.halftime { color: #eab308; }
 .tracker-status.final { color: var(--text-muted); }
 .tracker-status.pre { color: var(--text-muted); }
 
@@ -1728,6 +1730,8 @@ function getStatusText(status) {
   if (state === 'in') {
     const period = status.period || 1;
     const clock = status.displayClock || '';
+    if (period === 1 && (clock === '0:00' || clock === '0.0')) return 'Halftime';
+    if (period === 2 && clock === '20:00') return 'Halftime';
     const half = period <= 2 ? `${period}H` : `OT${period - 2}`;
     return `${half} ${clock}`;
   }
@@ -1866,7 +1870,7 @@ function renderGames(games) {
           </div>
         </div>
         <div class="game-meta">
-          <div class="game-status ${game.state}">${isLive ? '● ' : ''}${game.statusText}</div>
+          <div class="game-status ${game.statusText === 'Halftime' ? 'halftime' : game.state}">${isLive && game.statusText !== 'Halftime' ? '● ' : ''}${game.statusText}</div>
           ${game.round ? `<div class="game-round">${game.round}</div>` : ''}
           ${game.broadcast ? `<div class="game-broadcast">${game.broadcast}</div>` : ''}
         </div>
@@ -2141,7 +2145,8 @@ function renderTracker(games) {
     const { game, period, line, side, actual, complete, inProgress, diff, result } = entry;
     const isLive = game.state === 'in';
     const isFinal = game.state === 'post';
-    const statusClass = isLive ? 'live' : isFinal ? 'final' : 'pre';
+    const isHalftime = game.statusText === 'Halftime';
+    const statusClass = isHalftime ? 'halftime' : isLive ? 'live' : isFinal ? 'final' : 'pre';
 
     const genderBadge = currentGender === 'both' && game.gender
       ? `<span class="tracker-gender-badge" style="background:${game.gender === 'mens' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)'};color:${game.gender === 'mens' ? '#60a5fa' : '#f472b6'}">${game.gender === 'mens' ? 'M' : 'W'}</span>`
