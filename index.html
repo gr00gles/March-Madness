@@ -2299,20 +2299,47 @@ function renderTracker(games) {
     }
   });
 
-  // Play air horn for NEW wins (wins that weren't wins on the previous render)
+  // Play air horn / loss sound at the right moment:
+  // OVER bets: horn plays instantly when live score crosses the line (pacing-over)
+  // UNDER bets: horn plays only when the period settles (final) with score under
   [...activeBets, ...settledBets].forEach(entry => {
-    const { game, period, side, result } = entry;
-    const isWin = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side === result;
-    const isLoss = result && result !== 'pending' && result !== 'push' && !result.startsWith('pacing-') && side !== result;
+    const { game, period, side, result, complete } = entry;
     const settleKey = `${game.id}_${period}`;
-    if (isWin && !prevSettled[settleKey]) {
-      playAirHorn();
-      setTimeout(() => showTipPopup(), 3000);
+
+    // Over bet: fire when score first crosses the line (pacing or settled)
+    if (side === 'over' && !prevSettled[settleKey]) {
+      const hitOver = result === 'pacing-over' || (complete && result === 'over');
+      if (hitOver) {
+        playAirHorn();
+        setTimeout(() => showTipPopup(), 3000);
+        prevSettled[settleKey] = true;
+      }
     }
-    if (isLoss && !prevSettled[settleKey]) {
-      playLossSound();
+
+    // Under bet: only fire when the period is complete
+    if (side === 'under' && !prevSettled[settleKey] && complete) {
+      if (result === 'under') {
+        playAirHorn();
+        setTimeout(() => showTipPopup(), 3000);
+        prevSettled[settleKey] = true;
+      } else if (result === 'over') {
+        playLossSound();
+        prevSettled[settleKey] = true;
+      }
     }
-    if (isWin || isLoss) prevSettled[settleKey] = true;
+
+    // Over bet loss: only when settled
+    if (side === 'over' && !prevSettled[settleKey] && complete) {
+      if (result === 'under') {
+        playLossSound();
+        prevSettled[settleKey] = true;
+      }
+    }
+
+    // Push
+    if (complete && result === 'push' && !prevSettled[settleKey]) {
+      prevSettled[settleKey] = true;
+    }
   });
 }
 
