@@ -2337,7 +2337,7 @@ function getFirstHalfScore(game) {
 function isHalfComplete(game, half) {
   if (game.state === 'post') return true;
   if (game.state === 'pre') return false;
-  if (half === '1h') return game.period >= 2;
+  if (half === '1h') return game.period >= 2 || game.statusText === 'Halftime';
   if (half === '2h') return game.state === 'post';
   if (half === 'full') return game.state === 'post';
   return false;
