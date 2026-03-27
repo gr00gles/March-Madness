@@ -772,22 +772,13 @@ tr.locked-row .type-btn {
   z-index: 1;
 }
 
-.spread-meter-fill-left {
+.spread-meter-fill-bar {
   position: absolute;
-  right: 50%;
+  left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 12px 0 0 12px;
-  transition: width 0.5s ease;
-}
-
-.spread-meter-fill-right {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  border-radius: 0 12px 12px 0;
-  transition: width 0.5s ease;
+  border-radius: 12px;
+  transition: width 0.5s ease, background 0.5s ease;
 }
 
 .spread-meter-ball {
@@ -2736,24 +2727,17 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   const diffSign = adjustedDiff > 0 ? '+' : '';
   const diffRound = adjustedDiff !== 0 ? Math.round(adjustedDiff * 10) / 10 : 0;
 
-  // Fill from center: left = red (not covering), right = green (covering)
-  const fillPct = Math.abs(clamped) / maxRange * 50; // 0-50%
-  let fillHtml = '';
-  if (adjustedDiff < 0) {
-    // Red on left side of center
-    const color = isLoss2 ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.3)';
-    fillHtml = `<div class="spread-meter-fill-left" style="width:${fillPct}%;background:${color};"></div>`;
-  } else if (adjustedDiff > 0) {
-    // Green on right side of center
-    const color = isWin ? 'rgba(34,197,94,0.5)' : 'rgba(34,197,94,0.3)';
-    fillHtml = `<div class="spread-meter-fill-right" style="width:${fillPct}%;background:${color};"></div>`;
-  }
+  // Single fill from left (picked team's side):
+  // Even = 50%, covering = grows past 50% toward 100% (green), not covering = shrinks below 50% (red)
+  let fillColor = 'rgba(255,255,255,0.06)'; // grey for even
+  if (adjustedDiff > 0) fillColor = isWin ? 'rgba(34,197,94,0.45)' : 'rgba(34,197,94,0.3)';
+  else if (adjustedDiff < 0) fillColor = isLoss2 ? 'rgba(239,68,68,0.45)' : 'rgba(239,68,68,0.3)';
 
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        ${fillHtml}
+        <div class="spread-meter-fill-bar" style="width:${pct}%;background:${fillColor};"></div>
         <div class="spread-meter-ball" style="left:${pct}%">${diffSign}${diffRound}</div>
       </div>
     </div>`;
