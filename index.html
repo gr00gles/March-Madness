@@ -2749,11 +2749,6 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
         <div class="spread-meter-fill ${fillClass}" style="width:${pct}%"></div>
         <div class="spread-meter-ball" style="left:${pct}%">${diffSign}${diffRound}</div>
       </div>
-      <div class="spread-meter-labels">
-        <span class="spread-meter-label loss">NOT COVERING</span>
-        <span class="spread-meter-label ${adjustedDiff > 0 ? 'over' : adjustedDiff < 0 ? 'under' : ''}" style="font-weight:700;">${pickedAbbr} ${spreadLabel}</span>
-        <span class="spread-meter-label win">COVERING</span>
-      </div>
     </div>`;
 }
 
