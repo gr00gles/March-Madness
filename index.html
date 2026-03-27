@@ -799,55 +799,21 @@ tr.locked-row .type-btn {
   animation: spreadWave var(--pulse-speed, 1.5s) linear infinite;
 }
 
-/* Shooter on bad losses */
-.spread-shooter {
+/* Flying eagle on dominating team */
+.eagle-fly {
   position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 0;
+  top: -8px;
+  font-size: 1.1rem;
+  animation: eagleSoar 2s ease-in-out infinite;
+  z-index: 5;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
 }
 
-.spread-shooter-guy {
-  font-size: 1rem;
-  animation: shooterRecoil 0.6s ease-in-out infinite;
-}
-
-.spread-shooter-gun {
-  font-size: 0.8rem;
-  margin-left: -4px;
-  animation: shooterRecoil 0.6s ease-in-out infinite;
-}
-
-.spread-bullet {
-  position: absolute;
-  right: 36px;
-  font-size: 0.6rem;
-  animation: bulletFly 0.8s ease-out infinite;
-  opacity: 0;
-}
-
-.spread-bullet.b2 {
-  animation-delay: 0.3s;
-}
-
-.spread-bullet.b3 {
-  animation-delay: 0.6s;
-}
-
-@keyframes shooterRecoil {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(2px); }
-}
-
-@keyframes bulletFly {
-  0% { transform: translateX(0); opacity: 0; }
-  10% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { transform: translateX(-120px); opacity: 0; }
+@keyframes eagleSoar {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  25% { transform: translateY(-6px) translateX(3px); }
+  50% { transform: translateY(-2px) translateX(-2px); }
+  75% { transform: translateY(-8px) translateX(1px); }
 }
 
 @keyframes spreadWave {
@@ -2812,15 +2778,6 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   const minPct = 15;
   const clampedPct = Math.max(minPct, pct);
 
-  const shooterHtml = adjustedDiff <= -0.15 ? `
-    <div class="spread-shooter">
-      <span class="spread-shooter-guy">🤠</span>
-      <span class="spread-shooter-gun">🔫</span>
-      <span class="spread-bullet">💥</span>
-      <span class="spread-bullet b2">💥</span>
-      <span class="spread-bullet b3">💥</span>
-    </div>` : '';
-
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
@@ -2828,7 +2785,6 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
         <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${clampedPct}%;${fillStyle}">
           <span class="spread-meter-diff">${diffSign}${diffRound}</span>
         </div>
-        ${shooterHtml}
       </div>
     </div>`;
 }
@@ -3118,8 +3074,14 @@ function renderTracker(games) {
       const awayLogoStyle = awayLogoSize !== baseLogoSize ? `style="width:${awayLogoSize}px;height:${awayLogoSize}px;transition:all 0.5s ease;"` : '';
       const homeLogoStyle = homeLogoSize !== baseLogoSize ? `style="width:${homeLogoSize}px;height:${homeLogoSize}px;transition:all 0.5s ease;"` : '';
 
+      // Flying eagle on team winning by 10+
+      const rawScoreDiff = game.away.score - game.home.score;
+      const awayEagle = game.state !== 'pre' && rawScoreDiff >= 10 ? '<span class="eagle-fly">🦅</span>' : '';
+      const homeEagle = game.state !== 'pre' && rawScoreDiff <= -10 ? '<span class="eagle-fly">🦅</span>' : '';
+
       html += `<div class="tracker-bar-row">
-        <div class="tracker-team-side">
+        <div class="tracker-team-side" style="position:relative;">
+          ${awayEagle}
           ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'" ${awayLogoStyle}>` : ''}
           <span class="t-name">${game.away.abbreviation || game.away.name}</span>
           ${game.state !== 'pre' ? `<span class="t-score">${game.away.score}</span>` : ''}
@@ -3133,7 +3095,8 @@ function renderTracker(games) {
               : renderSlider(scoreToShow, line, side, result, game.id, sliderStart, isWin, isLoss2, period)
           }
         </div>
-        <div class="tracker-team-side">
+        <div class="tracker-team-side" style="position:relative;">
+          ${homeEagle}
           ${game.home.logo ? `<img src="${game.home.logo}" alt="" onerror="this.style.display='none'" ${homeLogoStyle}>` : ''}
           <span class="t-name">${game.home.abbreviation || game.home.name}</span>
           ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
