@@ -189,38 +189,6 @@ body {
   white-space: nowrap;
 }
 
-.avatar-menu-section {
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-  margin-top: 6px;
-  margin-bottom: 8px;
-}
-
-.avatar-menu-label {
-  display: block;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.avatar-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  color: var(--text);
-  cursor: pointer;
-  padding: 3px 0;
-}
-
-.avatar-toggle input[type="checkbox"] {
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
 .avatar-menu-btn {
   width: 100%;
   padding: 6px 12px;
@@ -1701,12 +1669,6 @@ tr.needs-bet td:first-child {
         <img class="user-avatar" id="userAvatar" src="" alt="" style="display:none" onclick="toggleAvatarMenu()">
         <div class="avatar-menu" id="avatarMenu">
           <span class="avatar-menu-name" id="avatarMenuName"></span>
-          <div class="avatar-menu-section">
-            <span class="avatar-menu-label">Show Periods</span>
-            <label class="avatar-toggle"><input type="checkbox" id="show1h" checked onchange="savePeriodSettings()"> 1st Half</label>
-            <label class="avatar-toggle"><input type="checkbox" id="show2h" checked onchange="savePeriodSettings()"> 2nd Half</label>
-            <label class="avatar-toggle"><input type="checkbox" id="showFull" checked onchange="savePeriodSettings()"> Full Game</label>
-          </div>
           <button class="avatar-menu-btn" id="signOutBtn">Sign Out</button>
         </div>
       </div>
@@ -1838,7 +1800,6 @@ auth.onAuthStateChanged((user) => {
       b.classList.toggle('active', b.dataset.value === currentDateMode);
     });
     updateDatePickerLabel();
-    restorePeriodSettings();
 
     // Migrate any local picks to Firebase
     migrateLocalPicks();
@@ -2285,12 +2246,11 @@ function renderGames(games) {
 }
 
 function renderOUTable(game) {
-  const allPeriods = [
+  const periods = [
     { key: '1h', label: '1st Half' },
     { key: '2h', label: '2nd Half' },
     { key: 'full', label: 'Full Game' },
   ];
-  const periods = allPeriods.filter(p => visiblePeriods[p.key] !== false);
 
   let rows = '';
   periods.forEach(({ key, label }) => {
@@ -3093,30 +3053,6 @@ function playLossSound() {
 }
 
 // --- Interactions ---
-// --- Period visibility settings ---
-let visiblePeriods = JSON.parse(localStorage.getItem('mm_visiblePeriods') || '{"1h":true,"2h":true,"full":true}');
-
-function savePeriodSettings() {
-  visiblePeriods = {
-    '1h': document.getElementById('show1h').checked,
-    '2h': document.getElementById('show2h').checked,
-    'full': document.getElementById('showFull').checked,
-  };
-  // Ensure at least one is checked
-  if (!visiblePeriods['1h'] && !visiblePeriods['2h'] && !visiblePeriods['full']) {
-    visiblePeriods['full'] = true;
-    document.getElementById('showFull').checked = true;
-  }
-  localStorage.setItem('mm_visiblePeriods', JSON.stringify(visiblePeriods));
-  refresh();
-}
-
-function restorePeriodSettings() {
-  document.getElementById('show1h').checked = visiblePeriods['1h'] !== false;
-  document.getElementById('show2h').checked = visiblePeriods['2h'] !== false;
-  document.getElementById('showFull').checked = visiblePeriods['full'] !== false;
-}
-
 function toggleAvatarMenu() {
   document.getElementById('avatarMenu').classList.toggle('open');
 }
