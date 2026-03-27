@@ -755,22 +755,22 @@ tr.locked-row .type-btn {
 
 .spread-meter-track {
   position: relative;
-  height: 24px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  height: 28px;
+  background: var(--border);
+  border-radius: 14px;
   overflow: hidden;
 }
 
 .spread-meter-center {
   position: absolute;
   left: 50%;
-  top: 0;
-  bottom: 0;
+  top: 2px;
+  bottom: 2px;
   width: 2px;
-  background: var(--text-muted);
-  opacity: 0.4;
-  z-index: 1;
+  background: var(--text);
+  opacity: 0.3;
+  z-index: 2;
+  border-radius: 1px;
 }
 
 .spread-meter-fill-bar {
@@ -778,7 +778,7 @@ tr.locked-row .type-btn {
   left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   transition: width 0.5s ease, background 0.5s ease;
 }
 
@@ -786,10 +786,13 @@ tr.locked-row .type-btn {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  color: var(--text);
-  z-index: 2;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  padding: 2px 8px;
+  border-radius: 10px;
+  z-index: 3;
   white-space: nowrap;
 }
 
@@ -2730,9 +2733,9 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
 
   // Single fill from left (picked team's side):
   // Even = 50%, covering = grows past 50% toward 100% (green), not covering = shrinks below 50% (red)
-  let fillColor = 'rgba(255,255,255,0.15)'; // grey for even
-  if (adjustedDiff > 0) fillColor = isWin ? 'rgba(34,197,94,0.45)' : 'rgba(34,197,94,0.3)';
-  else if (adjustedDiff < 0) fillColor = isLoss2 ? 'rgba(239,68,68,0.45)' : 'rgba(239,68,68,0.3)';
+  let fillColor = 'var(--border)'; // grey for even
+  if (adjustedDiff > 0) fillColor = isWin ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.4)';
+  else if (adjustedDiff < 0) fillColor = isLoss2 ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.4)';
 
   return `
     <div class="spread-meter">
