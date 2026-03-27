@@ -1357,8 +1357,6 @@ body {
     </div>
     <div class="action-btns">
       <button class="btn-sm" id="expandAll">Expand All</button>
-      <button class="btn-sm" id="exportBtn">Export</button>
-      <button class="btn-sm" id="importBtn">Import</button>
     </div>
     <div class="refresh-info">
       <span id="liveDot" class="live-dot" style="display:none"></span>
@@ -1375,31 +1373,6 @@ body {
 </div>
 </div>
 
-<!-- Export Modal -->
-<div class="modal-overlay" id="exportModal">
-  <div class="modal">
-    <h3>Export Your Picks</h3>
-    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Copy this JSON and share it with friends so they can import your picks.</p>
-    <textarea id="exportData" readonly></textarea>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal('exportModal')">Close</button>
-      <button class="btn btn-primary" onclick="copyExport()">Copy to Clipboard</button>
-    </div>
-  </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal">
-    <h3>Import Picks</h3>
-    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Paste a friend's exported JSON to view their picks alongside yours.</p>
-    <textarea id="importData" placeholder="Paste JSON here..."></textarea>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal('importModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="doImport()">Import</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // --- Firebase Config ---
@@ -2822,63 +2795,6 @@ document.getElementById('expandAll').addEventListener('click', () => {
   document.getElementById('expandAll').textContent = allExpanded ? 'Collapse All' : 'Expand All';
 });
 
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const data = {
-    name: currentUser?.displayName || 'Unknown',
-    picks: loadPicks(),
-    exported: new Date().toISOString(),
-  };
-  document.getElementById('exportData').value = JSON.stringify(data, null, 2);
-  document.getElementById('exportModal').classList.add('active');
-});
-
-document.getElementById('importBtn').addEventListener('click', () => {
-  document.getElementById('importData').value = '';
-  document.getElementById('importModal').classList.add('active');
-});
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('active');
-}
-
-function copyExport() {
-  const textarea = document.getElementById('exportData');
-  textarea.select();
-  navigator.clipboard.writeText(textarea.value).then(() => {
-    const btn = document.querySelector('#exportModal .btn-primary');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
-  });
-}
-
-function doImport() {
-  try {
-    const data = JSON.parse(document.getElementById('importData').value);
-    if (!data.picks) throw new Error('Invalid format');
-    const name = data.name || 'Imported';
-    const currentPicks = loadPicks();
-    Object.entries(data.picks).forEach(([gameId, periods]) => {
-      if (!currentPicks[gameId]) currentPicks[gameId] = {};
-      Object.entries(periods).forEach(([period, value]) => {
-        if (currentPicks[gameId][period] === undefined) {
-          currentPicks[gameId][period] = value;
-        }
-      });
-    });
-    savePicks(currentPicks);
-    closeModal('importModal');
-    refresh();
-    alert(`Imported picks from "${name}". Only games you hadn't entered lines for were updated.`);
-  } catch (e) {
-    alert('Invalid JSON format. Please paste the exported data exactly as copied.');
-  }
-}
-
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('active');
-  });
-});
 </script>
 </body>
 </html>
