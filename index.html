@@ -2715,11 +2715,29 @@ async function refresh() {
     expandedIds.add(card.dataset.id);
   });
 
+  // Save expanded tracker O/U sections
+  const expandedTrackerOUs = new Set();
+  document.querySelectorAll('.tracker-ou-section').forEach(section => {
+    if (section.style.display !== 'none') {
+      expandedTrackerOUs.add(section.id);
+    }
+  });
+
   await loadCurrentView();
 
   expandedIds.forEach(id => {
     const card = document.querySelector(`.game-card[data-id="${id}"]`);
     if (card) card.classList.add('expanded');
+  });
+
+  // Restore expanded tracker O/U sections
+  expandedTrackerOUs.forEach(id => {
+    const section = document.getElementById(id);
+    if (section) {
+      section.style.display = 'block';
+      const chevron = section.parentElement.querySelector('.tracker-chevron-icon');
+      if (chevron) chevron.textContent = '▲';
+    }
   });
 }
 
