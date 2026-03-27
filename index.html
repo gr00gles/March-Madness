@@ -152,11 +152,60 @@ body {
   gap: 8px;
 }
 
+.avatar-menu-wrapper {
+  position: relative;
+}
+
 .user-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   border: 2px solid var(--accent);
+  cursor: pointer;
+}
+
+.avatar-menu {
+  display: none;
+  position: absolute;
+  top: 36px;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 100;
+  min-width: 140px;
+  text-align: center;
+}
+
+.avatar-menu.open { display: block; }
+
+.avatar-menu-name {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+
+.avatar-menu-btn {
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.avatar-menu-btn:hover {
+  background: rgba(239,68,68,0.1);
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
 .user-name {
@@ -1469,10 +1518,15 @@ tr.needs-bet td:first-child {
     <div class="user-section" id="userSection">
       <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">🌙</button>
       <a href="https://buy.stripe.com/dRmaEX4eu2Dq4Hj0gYaAw00" target="_blank" class="btn-tip">🔥 Tip</a>
-      <img class="user-avatar" id="userAvatar" src="" alt="" style="display:none">
+      <div class="avatar-menu-wrapper">
+        <img class="user-avatar" id="userAvatar" src="" alt="" style="display:none" onclick="toggleAvatarMenu()">
+        <div class="avatar-menu" id="avatarMenu">
+          <span class="avatar-menu-name" id="avatarMenuName"></span>
+          <button class="avatar-menu-btn" id="signOutBtn">Sign Out</button>
+        </div>
+      </div>
       <span class="user-name" id="userDisplayName" style="display:none"></span>
       <span class="sync-badge connected" id="syncBadge" style="display:none">Synced</span>
-      <button class="btn-signout" id="signOutBtn">Sign Out</button>
     </div>
   </div>
   <div class="controls">
@@ -1572,6 +1626,7 @@ auth.onAuthStateChanged((user) => {
       avatar.style.display = '';
     }
     document.getElementById('userDisplayName').textContent = user.displayName || user.email;
+    document.getElementById('avatarMenuName').textContent = user.displayName || user.email;
 
     // Start listening to Firebase for this user's picks
     setupFirebaseListener();
@@ -2783,6 +2838,18 @@ function playLossSound() {
 }
 
 // --- Interactions ---
+function toggleAvatarMenu() {
+  document.getElementById('avatarMenu').classList.toggle('open');
+}
+
+// Close avatar menu when clicking outside
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('avatarMenu');
+  if (menu && !e.target.closest('.avatar-menu-wrapper')) {
+    menu.classList.remove('open');
+  }
+});
+
 function toggleGame(id) {
   const card = document.querySelector(`.game-card[data-id="${id}"]`);
   if (card) card.classList.toggle('expanded');
