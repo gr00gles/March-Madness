@@ -783,6 +783,23 @@ body {
 .tracker-card.settled-card {
   padding: 8px 12px;
   opacity: 0.75;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.tracker-card.settled-card.settled-win {
+  border-left-color: var(--over);
+  border-right-color: var(--over);
+}
+
+.tracker-card.settled-card.settled-loss {
+  border-left-color: var(--under);
+  border-right-color: var(--under);
+}
+
+.tracker-card.settled-card.settled-push {
+  border-left-color: var(--push);
+  border-right-color: var(--push);
 }
 
 .settled-compact {
@@ -790,25 +807,6 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  padding: 2px 4px;
-  border-radius: 6px;
-}
-
-.settled-compact.settled-win {
-  border-left-color: var(--over);
-  border-right-color: var(--over);
-}
-
-.settled-compact.settled-loss {
-  border-left-color: var(--under);
-  border-right-color: var(--under);
-}
-
-.settled-compact.settled-push {
-  border-left-color: var(--push);
-  border-right-color: var(--push);
 }
 
 .settled-period-vert {
@@ -2539,6 +2537,9 @@ function renderTracker(games) {
       isLive ? 'is-live' : '',
       isWin ? 'win-card' : '',
       isSettledSection ? 'settled-card' : '',
+      isSettledSection && isWin ? 'settled-win' : '',
+      isSettledSection && isLoss2 ? 'settled-loss' : '',
+      isSettledSection && !isWin && !isLoss2 ? 'settled-push' : '',
       isPanic ? 'panic' : isVeryNervous ? 'very-nervous' : isNervous ? 'nervous' : '',
     ].filter(Boolean).join(' ');
 
@@ -2568,9 +2569,7 @@ function renderTracker(games) {
 
       const settledPeriodHtml = period === '1h' ? '1ST<br>HALF' : period === '2h' ? '2ND<br>HALF' : 'FULL<br>GAME';
 
-      const settledResultClass = isWin ? 'settled-win' : isLoss2 ? 'settled-loss' : 'settled-push';
-
-      html += `<div class="settled-compact ${settledResultClass}">
+      html += `<div class="settled-compact">
         <div class="settled-period-vert">${settledPeriodHtml}</div>
         <div class="settled-team-col">
           ${game.away.logo ? `<img class="settled-logo" src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
