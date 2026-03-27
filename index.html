@@ -799,30 +799,13 @@ tr.locked-row .type-btn {
 
 .spread-meter-fill-bar.spread-heartbeat {
   overflow: hidden;
+  background-size: 200% 100%;
+  animation: spreadWave var(--pulse-speed, 1.5s) linear infinite;
 }
 
-.spread-meter-fill-bar.spread-heartbeat::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 40%;
-  background: linear-gradient(to left,
-    transparent 0%,
-    rgba(255,255,255,0.03) 20%,
-    rgba(239,68,68,0.5) 45%,
-    rgba(255,120,120,0.8) 50%,
-    rgba(239,68,68,0.5) 55%,
-    rgba(255,255,255,0.03) 80%,
-    transparent 100%
-  );
-  border-radius: 14px;
-  animation: heartbeatSweep var(--pulse-speed, 1.5s) ease-in-out infinite;
-}
-
-@keyframes heartbeatSweep {
-  0% { right: -40%; }
-  100% { right: 100%; }
+@keyframes spreadWave {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 .spread-meter-labels {
@@ -2760,23 +2743,28 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   const diffSign = adjustedDiff > 0 ? '+' : '';
   const diffRound = adjustedDiff !== 0 ? Math.round(adjustedDiff * 10) / 10 : 0;
 
-  // Single fill from left (picked team's side):
-  // Even = 50%, covering = grows past 50% toward 100% (green), not covering = shrinks below 50% (red)
-  let fillColor = 'var(--border)'; // grey for even
-  if (adjustedDiff > 0) fillColor = isWin ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.4)';
-  else if (adjustedDiff < 0) fillColor = isLoss2 ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.4)';
+  // Single fill from left (picked team's side)
+  let fillStyle = `background:var(--border);`; // grey for even
+  let heartbeatClass = '';
 
-  // Heartbeat sweep on the losing side: closer to even = faster sweep
-  // 0 pts = 0.4s (frantic), 15+ pts = 2.5s (slow)
-  const absCover = Math.abs(adjustedDiff);
-  const sweepSpeed = (0.4 + Math.min(absCover, 15) * (2.1 / 15)).toFixed(2);
-  const heartbeatClass = adjustedDiff < 0 ? 'spread-heartbeat' : '';
+  if (adjustedDiff > 0) {
+    const color = isWin ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.4)';
+    fillStyle = `background:${color};`;
+  } else if (adjustedDiff < 0) {
+    // Wave gradient for losing side
+    const absCover = Math.abs(adjustedDiff);
+    const sweepSpeed = (0.8 + Math.min(absCover, 15) * (2.2 / 15)).toFixed(2);
+    const baseAlpha = isLoss2 ? '0.6' : '0.35';
+    const waveAlpha = isLoss2 ? '0.85' : '0.6';
+    fillStyle = `background:linear-gradient(90deg, rgba(239,68,68,${baseAlpha}) 0%, rgba(255,100,100,${waveAlpha}) 25%, rgba(239,68,68,${baseAlpha}) 50%, rgba(200,50,50,${waveAlpha}) 75%, rgba(239,68,68,${baseAlpha}) 100%);background-size:200% 100%;--pulse-speed:${sweepSpeed}s;`;
+    heartbeatClass = 'spread-heartbeat';
+  }
 
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${pct}%;background:${fillColor};--pulse-speed:${sweepSpeed}s;"></div>
+        <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${pct}%;${fillStyle}"></div>
         <span class="spread-meter-diff">${diffSign}${diffRound}</span>
       </div>
     </div>`;
