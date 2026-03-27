@@ -1360,6 +1360,83 @@ body {
   z-index: 2;
 }
 .tip-flag .tip-x:hover { color: #fff; }
+
+/* Game notification - slides from left */
+.game-notify {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateX(-100%) translateY(-50%);
+  z-index: 998;
+  background: var(--card);
+  border: 2px solid #eab308;
+  border-left: none;
+  border-radius: 0 14px 14px 0;
+  padding: 14px 16px 14px 12px;
+  width: 220px;
+  box-shadow: 8px 0 30px rgba(234,179,8,0.3);
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.game-notify.visible {
+  transform: translateX(0) translateY(-50%);
+}
+.game-notify.dismissing {
+  transform: translateX(-110%) translateY(-50%) !important;
+  transition: transform 0.3s ease !important;
+}
+.game-notify-x {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+.game-notify-x:hover { color: var(--text); }
+.game-notify-icon { font-size: 1.4rem; margin-bottom: 4px; }
+.game-notify-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #eab308;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.game-notify-body {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.game-notify-warn {
+  font-size: 0.68rem;
+  color: #f97316;
+  font-weight: 700;
+  margin-top: 6px;
+  animation: pulse 1.5s infinite;
+}
+
+/* Needs-bet highlight on input table rows */
+tr.needs-bet td {
+  background: rgba(234,179,8,0.08);
+}
+tr.needs-bet td:first-child {
+  border-left: 3px solid #eab308;
+  animation: needsBetPulse 2s ease-in-out infinite;
+}
+@keyframes needsBetPulse {
+  0%, 100% { border-left-color: #eab308; }
+  50% { border-left-color: rgba(234,179,8,0.3); }
+}
+
+/* Needs-bet highlight on tracker cards */
+.tracker-card.needs-bet-card {
+  border-color: rgba(234,179,8,0.5);
+  box-shadow: 0 0 12px rgba(234,179,8,0.15);
+}
 </style>
 </head>
 <body>
@@ -1989,8 +2066,18 @@ function renderOUTable(game) {
         <button class="side-btn ${side === 'under' ? 'active-under' : ''}" data-game="${game.id}" data-period="${key}" data-side="under" onclick="onSideChange(this)">U</button>
       </div>`;
 
+    // Highlight rows that need a bet: 1H/Full when pre-game, 2H/Full at halftime
+    const noBet = (line === '' || line === null || line === undefined) || !side;
+    const isHalftime = game.statusText === 'Halftime';
+    const needsBet = noBet && (
+      (game.state === 'pre') ||
+      (key === '1h' && game.state === 'in' && !complete) ||
+      (key === '2h' && isHalftime) ||
+      (key === 'full' && game.state === 'in' && !complete)
+    );
+
     rows += `
-      <tr>
+      <tr${needsBet ? ' class="needs-bet"' : ''}>
         <td class="period-label">${label}</td>
         <td>${sideHtml}</td>
         <td><input class="ou-input" type="number" step="0.5" value="${line}" placeholder="${key === 'full' && game.vegasOU ? game.vegasOU : '—'}" data-game="${game.id}" data-period="${key}" onblur="onPickChange(this)"></td>
@@ -2552,6 +2639,91 @@ function dismissTip(el) {
   setTimeout(() => { if (flag.parentNode) flag.remove(); }, 400);
 }
 
+// --- Game Notifications ---
+const shownNotifications = new Set();
+let notifyQueue = [];
+let notifyActive = false;
+
+function checkGameNotifications(games) {
+  const now = Date.now();
+
+  games.forEach(game => {
+    // 5 minutes before 1H tipoff
+    if (game.state === 'pre') {
+      const tipoff = new Date(game.date).getTime();
+      const minsUntil = (tipoff - now) / 60000;
+      const key = `${game.id}_1h_pre`;
+      if (minsUntil > 0 && minsUntil <= 5 && !shownNotifications.has(key)) {
+        shownNotifications.add(key);
+        const unbetted = [];
+        if (!hasBet(game.id, '1h')) unbetted.push('1H');
+        if (!hasBet(game.id, '2h')) unbetted.push('2H');
+        if (!hasBet(game.id, 'full')) unbetted.push('Full');
+        const warnHtml = unbetted.length
+          ? `<div class="game-notify-warn">⚠ No bet placed: ${unbetted.join(', ')}</div>`
+          : '';
+        queueNotify(`🏀`, `Tipoff in ${Math.ceil(minsUntil)} min`,
+          `${game.away.name} vs ${game.home.name}`, warnHtml);
+      }
+    }
+
+    // Halftime = 2H about to start
+    if (game.statusText === 'Halftime') {
+      const key = `${game.id}_2h_half`;
+      if (!shownNotifications.has(key)) {
+        shownNotifications.add(key);
+        const unbetted = [];
+        if (!hasBet(game.id, '2h')) unbetted.push('2H');
+        if (!hasBet(game.id, 'full') && !isHalfComplete(game, 'full')) unbetted.push('Full');
+        const warnHtml = unbetted.length
+          ? `<div class="game-notify-warn">⚠ No bet placed: ${unbetted.join(', ')}</div>`
+          : '';
+        queueNotify(`⏸️`, `Halftime`,
+          `${game.away.name} vs ${game.home.name}`, warnHtml);
+      }
+    }
+  });
+}
+
+function queueNotify(icon, title, body, extraHtml) {
+  notifyQueue.push({ icon, title, body, extraHtml });
+  if (!notifyActive) showNextNotify();
+}
+
+function showNextNotify() {
+  if (!notifyQueue.length) { notifyActive = false; return; }
+  notifyActive = true;
+  const { icon, title, body, extraHtml } = notifyQueue.shift();
+
+  const el = document.createElement('div');
+  el.className = 'game-notify';
+  el.innerHTML = `
+    <button class="game-notify-x" onclick="dismissGameNotify(this)">✕</button>
+    <div class="game-notify-icon">${icon}</div>
+    <div class="game-notify-title">${title}</div>
+    <div class="game-notify-body">${body}</div>
+    ${extraHtml || ''}
+  `;
+  document.body.appendChild(el);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => el.classList.add('visible'));
+  });
+
+  setTimeout(() => dismissGameNotify(el), 15000);
+}
+
+function dismissGameNotify(el) {
+  const notify = el.closest ? el.closest('.game-notify') : el;
+  if (!notify || !notify.parentNode || notify.classList.contains('dismissing')) return;
+  notify.classList.add('dismissing');
+  notify.classList.remove('visible');
+  setTimeout(() => {
+    if (notify.parentNode) notify.remove();
+    showNextNotify();
+  }, 400);
+}
+
 function playLossSound() {
   // Sad descending trombone: wah wah wah wahhh
   try {
@@ -2779,6 +2951,9 @@ async function loadCurrentView() {
     });
     renderTracker(delayedGames);
   }
+
+  // Check for upcoming game notifications
+  checkGameNotifications(games);
 
   isFirstLoad = false;
   updateRefreshInfo();
