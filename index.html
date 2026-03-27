@@ -295,6 +295,37 @@ body {
   flex-wrap: wrap;
 }
 
+.date-picker-wrapper {
+  position: relative;
+}
+
+.date-picker-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.date-picker-dropdown {
+  display: none;
+  position: absolute;
+  top: 38px;
+  left: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 100;
+  min-width: 240px;
+}
+
+.date-picker-dropdown.open { display: flex; flex-direction: column; gap: 10px; }
+
+.date-picker-dropdown .toggle-group { width: 100%; }
+.date-picker-dropdown .toggle-btn { flex: 1; text-align: center; }
+.date-picker-dropdown .date-nav { justify-content: center; width: 100%; }
+
 .toggle-group {
   display: flex;
   background: var(--input-bg);
@@ -1546,25 +1577,28 @@ tr.needs-bet td:first-child {
         <button class="toggle-btn" data-value="womens">Women's</button>
         <button class="toggle-btn" data-value="both">Both</button>
       </div>
-      <div class="action-btns">
-        <button class="btn-sm" id="expandAll">Expand All</button>
+      <div class="date-picker-wrapper">
+        <button class="btn-sm date-picker-toggle" id="datePickerToggle" onclick="toggleDatePicker()">
+          📅 <span id="datePickerLabel"></span> ▾
+        </button>
+        <div class="date-picker-dropdown" id="datePickerDropdown">
+          <div class="toggle-group" id="dateMode">
+            <button class="toggle-btn active" data-value="single">Date</button>
+            <button class="toggle-btn" data-value="range">Range</button>
+            <button class="toggle-btn" data-value="all">All</button>
+          </div>
+          <div class="date-nav" id="dateNav">
+            <button id="prevDay">&larr;</button>
+            <span class="date-label" id="dateLabel"></span>
+            <button id="nextDay">&rarr;</button>
+          </div>
+          <div id="dateEndPicker" style="display:none">
+            <span class="tracker-date-label">to</span>
+            <input type="date" class="date-input" id="endDateInput" />
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="controls-row">
-      <div class="toggle-group" id="dateMode">
-        <button class="toggle-btn active" data-value="single">Date</button>
-        <button class="toggle-btn" data-value="range">Range</button>
-        <button class="toggle-btn" data-value="all">All</button>
-      </div>
-      <div class="date-nav" id="dateNav">
-        <button id="prevDay">&larr;</button>
-        <span class="date-label" id="dateLabel"></span>
-        <button id="nextDay">&rarr;</button>
-      </div>
-      <div id="dateEndPicker" style="display:none">
-        <span class="tracker-date-label">to</span>
-        <input type="date" class="date-input" id="endDateInput" />
-      </div>
+      <button class="btn-sm" id="expandAll">Expand All</button>
     </div>
     <div class="refresh-info">
       <span id="liveDot" class="live-dot" style="display:none"></span>
@@ -1655,6 +1689,7 @@ auth.onAuthStateChanged((user) => {
     document.querySelectorAll('#dateMode .toggle-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.value === currentDateMode);
     });
+    updateDatePickerLabel();
 
     // Migrate any local picks to Firebase
     migrateLocalPicks();
@@ -2852,11 +2887,30 @@ function toggleAvatarMenu() {
   document.getElementById('avatarMenu').classList.toggle('open');
 }
 
-// Close avatar menu when clicking outside
+function toggleDatePicker() {
+  document.getElementById('datePickerDropdown').classList.toggle('open');
+}
+
+function updateDatePickerLabel() {
+  const label = document.getElementById('datePickerLabel');
+  if (currentDateMode === 'all') {
+    label.textContent = 'All Dates';
+  } else if (currentDateMode === 'range') {
+    label.textContent = formatDateDisplay(currentDate) + ' → ' + formatDateDisplay(endDate);
+  } else {
+    label.textContent = formatDateDisplay(currentDate);
+  }
+}
+
+// Close menus when clicking outside
 document.addEventListener('click', (e) => {
-  const menu = document.getElementById('avatarMenu');
-  if (menu && !e.target.closest('.avatar-menu-wrapper')) {
-    menu.classList.remove('open');
+  const avatarMenu = document.getElementById('avatarMenu');
+  if (avatarMenu && !e.target.closest('.avatar-menu-wrapper')) {
+    avatarMenu.classList.remove('open');
+  }
+  const datePicker = document.getElementById('datePickerDropdown');
+  if (datePicker && !e.target.closest('.date-picker-wrapper')) {
+    datePicker.classList.remove('open');
   }
 });
 
@@ -3165,6 +3219,7 @@ document.querySelectorAll('#dateMode .toggle-btn').forEach(btn => {
     this.classList.add('active');
     currentDateMode = this.dataset.value;
     localStorage.setItem('mm_dateMode', currentDateMode);
+    updateDatePickerLabel();
     isFirstLoad = true; loadCurrentView();
   });
 });
@@ -3172,6 +3227,7 @@ document.querySelectorAll('#dateMode .toggle-btn').forEach(btn => {
 document.getElementById('endDateInput').addEventListener('change', function() {
   endDate = new Date(this.value + 'T12:00:00');
   localStorage.setItem('mm_endDate', endDate.toISOString());
+  updateDatePickerLabel();
   isFirstLoad = true; loadCurrentView();
 });
 
@@ -3179,6 +3235,7 @@ document.getElementById('prevDay').addEventListener('click', () => {
   currentDate.setDate(currentDate.getDate() - 1);
   localStorage.setItem('mm_date', currentDate.toISOString());
   document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+  updateDatePickerLabel();
   isFirstLoad = true; loadCurrentView();
 });
 
@@ -3186,6 +3243,7 @@ document.getElementById('nextDay').addEventListener('click', () => {
   currentDate.setDate(currentDate.getDate() + 1);
   localStorage.setItem('mm_date', currentDate.toISOString());
   document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+  updateDatePickerLabel();
   isFirstLoad = true; loadCurrentView();
 });
 
