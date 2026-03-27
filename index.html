@@ -1548,10 +1548,15 @@ tr.needs-bet td:first-child {
 
 @keyframes veryNervousShake {
   0%, 100% { transform: translateX(0) rotate(0deg); }
-  20% { transform: translateX(-2px) rotate(-0.3deg); }
+  10% { transform: translateX(-3px) rotate(-0.5deg); }
+  20% { transform: translateX(3px) rotate(0.5deg); }
+  30% { transform: translateX(-4px) rotate(-0.4deg); }
   40% { transform: translateX(2px) rotate(0.3deg); }
-  60% { transform: translateX(-1px) rotate(-0.2deg); }
-  80% { transform: translateX(1px) rotate(0.2deg); }
+  50% { transform: translateX(-2px) rotate(-0.3deg); }
+  60% { transform: translateX(4px) rotate(0.5deg); }
+  70% { transform: translateX(-3px) rotate(-0.4deg); }
+  80% { transform: translateX(3px) rotate(0.3deg); }
+  90% { transform: translateX(-2px) rotate(-0.2deg); }
 }
 
 /* Needs-bet highlight on tracker cards */
@@ -2473,8 +2478,8 @@ function renderTracker(games) {
     // Nervous when live and score is close to the line
     const lineNum = parseFloat(line) || 0;
     const absDiff = Math.abs(actual - lineNum);
-    const isNervous = inProgress && !complete && !isWin && !isLoss2 && absDiff <= 5;
-    const isVeryNervous = isNervous && absDiff <= 2;
+    const isNervous = inProgress && !complete && !isWin && !isLoss2 && absDiff <= 8;
+    const isVeryNervous = isNervous && absDiff <= 4;
 
     const cardClasses = [
       'tracker-card',
