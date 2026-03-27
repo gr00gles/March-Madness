@@ -780,21 +780,17 @@ tr.locked-row .type-btn {
   bottom: 0;
   border-radius: 14px;
   transition: width 0.5s ease, background 0.5s ease;
-}
-
-.spread-meter-diff {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.spread-meter-diff {
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--text);
   z-index: 2;
+  white-space: nowrap;
 }
 
 .spread-meter-fill-bar.spread-heartbeat {
@@ -2761,12 +2757,17 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
     heartbeatClass = 'spread-heartbeat';
   }
 
+  // Minimum width so the number always fits, and cap it
+  const minPct = 15;
+  const clampedPct = Math.max(minPct, pct);
+
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${pct}%;${fillStyle}"></div>
-        <span class="spread-meter-diff">${diffSign}${diffRound}</span>
+        <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${clampedPct}%;${fillStyle}">
+          <span class="spread-meter-diff">${diffSign}${diffRound}</span>
+        </div>
       </div>
     </div>`;
 }
