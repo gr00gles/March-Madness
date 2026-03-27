@@ -803,17 +803,17 @@ tr.locked-row .type-btn {
   top: 2px;
   bottom: 2px;
   width: 3px;
-  background: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.8);
   border-radius: 2px;
-  box-shadow: 0 0 6px rgba(255,255,255,0.5);
-  animation: heartbeatSweep var(--pulse-speed, 1.5s) ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(239,68,68,0.8), 0 0 4px rgba(255,255,255,0.6);
+  animation: heartbeatSweep var(--pulse-speed, 1.5s) ease-out infinite;
 }
 
 @keyframes heartbeatSweep {
-  0% { right: 100%; opacity: 0; }
+  0% { right: 0%; opacity: 0; }
   10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { right: 0%; opacity: 0; }
+  85% { opacity: 1; }
+  100% { right: 95%; opacity: 0; }
 }
 
 .spread-meter-labels {
