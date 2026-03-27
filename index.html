@@ -676,6 +676,12 @@ body {
   box-shadow: 0 0 15px rgba(34,197,94,0.15);
 }
 
+.tracker-ou-section {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
 /* Bet Tracker View */
 .tracker-layout {
   display: flex;
@@ -2221,7 +2227,7 @@ function renderTracker(games) {
     // Slider start: 1H=0, Full=0, 2H=first half score
     const sliderStart = period === '2h' ? getFirstHalfScore(game) : 0;
 
-    html += `<div class="tracker-bar-row">
+    html += `<div class="tracker-bar-row" onclick="toggleTrackerInput('${game.id}', this, event)" style="cursor:pointer;">
       <div class="tracker-team-side">
         ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
         <span class="t-name">${game.away.abbreviation || game.away.name}</span>
@@ -2239,6 +2245,10 @@ function renderTracker(games) {
         <span class="t-name">${game.home.abbreviation || game.home.name}</span>
         ${game.state !== 'pre' ? `<span class="t-score">${game.home.score}</span>` : ''}
       </div>
+    </div>`;
+
+    html += `<div class="tracker-ou-section" id="tracker-ou-${game.id}-${period}" style="display:none;">
+      ${renderOUTable(game)}
     </div>`;
 
     html += `</div>`;
@@ -2498,8 +2508,11 @@ function onPickChange(input) {
   const gameId = input.dataset.game;
   const period = input.dataset.period;
   savePick(gameId, period, input.value);
-  // Don't re-render the card — just update the summary
-  renderSummary(getAllCachedGames());
+  if (currentTab === 'tracker') {
+    refresh();
+  } else {
+    renderSummary(getAllCachedGames());
+  }
 }
 
 function onSideChange(btn) {
@@ -2518,7 +2531,23 @@ function onSideChange(btn) {
   if (newSide === 'over') btn.classList.add('active-over');
   if (newSide === 'under') btn.classList.add('active-under');
 
-  renderSummary(getAllCachedGames());
+  if (currentTab === 'tracker') {
+    refresh();
+  } else {
+    renderSummary(getAllCachedGames());
+  }
+}
+
+function toggleTrackerInput(gameId, clickedRow, event) {
+  // Don't toggle if clicking inside the delay controls
+  if (event && event.target.closest('.delay-control')) return;
+  const card = clickedRow.closest('.tracker-card');
+  const section = card.querySelector('.tracker-ou-section');
+  if (!section) return;
+  const isOpen = section.style.display !== 'none';
+  // Close all other open tracker ou-sections
+  document.querySelectorAll('.tracker-ou-section').forEach(s => s.style.display = 'none');
+  if (!isOpen) section.style.display = 'block';
 }
 
 function adjustDelay(gameId, delta) {
