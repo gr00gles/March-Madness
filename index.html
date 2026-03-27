@@ -799,6 +799,57 @@ tr.locked-row .type-btn {
   animation: spreadWave var(--pulse-speed, 1.5s) linear infinite;
 }
 
+/* Shooter on bad losses */
+.spread-shooter {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.spread-shooter-guy {
+  font-size: 1rem;
+  animation: shooterRecoil 0.6s ease-in-out infinite;
+}
+
+.spread-shooter-gun {
+  font-size: 0.8rem;
+  margin-left: -4px;
+  animation: shooterRecoil 0.6s ease-in-out infinite;
+}
+
+.spread-bullet {
+  position: absolute;
+  right: 36px;
+  font-size: 0.6rem;
+  animation: bulletFly 0.8s ease-out infinite;
+  opacity: 0;
+}
+
+.spread-bullet.b2 {
+  animation-delay: 0.3s;
+}
+
+.spread-bullet.b3 {
+  animation-delay: 0.6s;
+}
+
+@keyframes shooterRecoil {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+
+@keyframes bulletFly {
+  0% { transform: translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(-120px); opacity: 0; }
+}
+
 @keyframes spreadWave {
   0% { background-position: -100% 0; }
   100% { background-position: 100% 0; }
@@ -2761,6 +2812,15 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   const minPct = 15;
   const clampedPct = Math.max(minPct, pct);
 
+  const shooterHtml = adjustedDiff <= -10 ? `
+    <div class="spread-shooter">
+      <span class="spread-shooter-guy">🤠</span>
+      <span class="spread-shooter-gun">🔫</span>
+      <span class="spread-bullet">💥</span>
+      <span class="spread-bullet b2">💥</span>
+      <span class="spread-bullet b3">💥</span>
+    </div>` : '';
+
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
@@ -2768,6 +2828,7 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
         <div class="spread-meter-fill-bar ${heartbeatClass}" style="width:${clampedPct}%;${fillStyle}">
           <span class="spread-meter-diff">${diffSign}${diffRound}</span>
         </div>
+        ${shooterHtml}
       </div>
     </div>`;
 }
