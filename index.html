@@ -1560,6 +1560,19 @@ body {
 .game-notify-inputs .ou-input { width: 55px; font-size: 0.7rem; padding: 3px 4px; }
 .game-notify-inputs .side-btn { padding: 2px 6px; font-size: 0.65rem; }
 
+/* Locked row - period is complete */
+tr.locked-row td {
+  opacity: 0.5;
+}
+tr.locked-row .ou-input {
+  background: var(--border);
+  cursor: not-allowed;
+}
+tr.locked-row .side-btn {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* Needs-bet highlight on input table rows */
 tr.needs-bet td {
   background: rgba(234,179,8,0.08);
@@ -2275,27 +2288,36 @@ function renderOUTable(game) {
       }
     }
 
-    const sideHtml = `
-      <div class="side-toggle">
-        <button class="side-btn ${side === 'over' ? 'active-over' : ''}" data-game="${game.id}" data-period="${key}" data-side="over" onclick="onSideChange(this)">O</button>
-        <button class="side-btn ${side === 'under' ? 'active-under' : ''}" data-game="${game.id}" data-period="${key}" data-side="under" onclick="onSideChange(this)">U</button>
-      </div>`;
+    // Lock inputs once the period is complete
+    const locked = complete;
+
+    const sideHtml = locked
+      ? `<div class="side-toggle locked">
+          <button class="side-btn ${side === 'over' ? 'active-over' : ''}" disabled>O</button>
+          <button class="side-btn ${side === 'under' ? 'active-under' : ''}" disabled>U</button>
+        </div>`
+      : `<div class="side-toggle">
+          <button class="side-btn ${side === 'over' ? 'active-over' : ''}" data-game="${game.id}" data-period="${key}" data-side="over" onclick="onSideChange(this)">O</button>
+          <button class="side-btn ${side === 'under' ? 'active-under' : ''}" data-game="${game.id}" data-period="${key}" data-side="under" onclick="onSideChange(this)">U</button>
+        </div>`;
 
     // Highlight rows that need a bet: 1H/Full when pre-game, 2H/Full at halftime
     const noBet = (line === '' || line === null || line === undefined) || !side;
     const isHalftime = game.statusText === 'Halftime';
-    const needsBet = noBet && (
+    const needsBet = !locked && noBet && (
       (game.state === 'pre') ||
       (key === '1h' && game.state === 'in' && !complete) ||
       (key === '2h' && isHalftime) ||
       (key === 'full' && game.state === 'in' && !complete)
     );
 
+    const rowClass = locked ? 'locked-row' : needsBet ? 'needs-bet' : '';
+
     rows += `
-      <tr${needsBet ? ' class="needs-bet"' : ''}>
+      <tr${rowClass ? ` class="${rowClass}"` : ''}>
         <td class="period-label">${label}</td>
         <td>${sideHtml}</td>
-        <td><input class="ou-input" type="number" step="0.5" value="${line}" placeholder="${key === 'full' && game.vegasOU ? game.vegasOU : '—'}" data-game="${game.id}" data-period="${key}" onblur="onPickChange(this)"></td>
+        <td><input class="ou-input" type="number" step="0.5" value="${line}" placeholder="${key === 'full' && game.vegasOU ? game.vegasOU : '—'}" data-game="${game.id}" data-period="${key}" onblur="onPickChange(this)"${locked ? ' disabled' : ''}></td>
         <td>${showScore ? actual : '-'}</td>
         <td>${diffHtml}</td>
         <td>${resultHtml}</td>
