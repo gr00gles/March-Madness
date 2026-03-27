@@ -1491,12 +1491,19 @@ body {
   border-left: none;
   border-radius: 0 14px 14px 0;
   padding: 14px 16px 14px 12px;
-  width: 220px;
+  width: 260px;
   box-shadow: 8px 0 30px rgba(234,179,8,0.3);
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .game-notify.visible {
   transform: translateX(0) translateY(-50%);
+}
+.game-notify.peeking {
+  transform: translateX(-232px) translateY(-50%);
+  cursor: pointer;
+}
+.game-notify.peeking:hover {
+  transform: translateX(-224px) translateY(-50%);
 }
 .game-notify.dismissing {
   transform: translateX(-110%) translateY(-50%) !important;
@@ -1514,6 +1521,14 @@ body {
   padding: 4px;
 }
 .game-notify-x:hover { color: var(--text); }
+.game-notify-peek-tab {
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  pointer-events: none;
+}
 .game-notify-icon { font-size: 1.4rem; margin-bottom: 4px; }
 .game-notify-title {
   font-size: 0.72rem;
@@ -1536,6 +1551,14 @@ body {
   margin-top: 6px;
   animation: pulse 1.5s infinite;
 }
+.game-notify-inputs {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.game-notify-inputs .ou-table { font-size: 0.7rem; }
+.game-notify-inputs .ou-input { width: 55px; font-size: 0.7rem; padding: 3px 4px; }
+.game-notify-inputs .side-btn { padding: 2px 6px; font-size: 0.65rem; }
 
 /* Needs-bet highlight on input table rows */
 tr.needs-bet td {
@@ -2887,7 +2910,7 @@ function checkGameNotifications(games) {
           ? `<div class="game-notify-warn">⚠ No bet placed: ${unbetted.join(', ')}</div>`
           : '';
         queueNotify(`🏀`, `Tipoff in ${Math.ceil(minsUntil)} min`,
-          `${game.away.name} vs ${game.home.name}`, warnHtml);
+          `${game.away.name} vs ${game.home.name}`, warnHtml, game);
       }
     }
 
@@ -2907,48 +2930,72 @@ function checkGameNotifications(games) {
           ? `<div class="game-notify-warn">⚠ No bet placed: ${unbetted.join(', ')}</div>`
           : '';
         queueNotify(`⏸️`, `2H Starting Soon`,
-          `${game.away.name} vs ${game.home.name}`, warnHtml);
+          `${game.away.name} vs ${game.home.name}`, warnHtml, game);
       }
     }
   });
 }
 
-function queueNotify(icon, title, body, extraHtml) {
-  notifyQueue.push({ icon, title, body, extraHtml });
+function queueNotify(icon, title, body, extraHtml, game) {
+  notifyQueue.push({ icon, title, body, extraHtml, game });
   if (!notifyActive) showNextNotify();
 }
 
 function showNextNotify() {
   if (!notifyQueue.length) { notifyActive = false; return; }
   notifyActive = true;
-  const { icon, title, body, extraHtml } = notifyQueue.shift();
+  const { icon, title, body, extraHtml, game } = notifyQueue.shift();
+
+  const gameInputHtml = game ? `<div class="game-notify-inputs">${renderOUTable(game)}</div>` : '';
 
   const el = document.createElement('div');
   el.className = 'game-notify';
   el.innerHTML = `
-    <button class="game-notify-x" onclick="dismissGameNotify(this)">✕</button>
+    <button class="game-notify-x" onclick="peekGameNotify(this)">✕</button>
     <div class="game-notify-icon">${icon}</div>
     <div class="game-notify-title">${title}</div>
     <div class="game-notify-body">${body}</div>
     ${extraHtml || ''}
+    ${gameInputHtml}
+    <span class="game-notify-peek-tab">🏀</span>
   `;
   document.body.appendChild(el);
+
+  // Click handler for peeking state — reopen
+  el.addEventListener('click', function(e) {
+    if (el.classList.contains('peeking') && !e.target.closest('.game-notify-x')) {
+      el.classList.remove('peeking');
+      el.classList.add('visible');
+    }
+  });
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => el.classList.add('visible'));
   });
 
-  setTimeout(() => dismissGameNotify(el), 15000);
+  setTimeout(() => peekGameNotify(el), 15000);
+}
+
+function peekGameNotify(el) {
+  const notify = el.closest ? el.closest('.game-notify') : el;
+  if (!notify || !notify.parentNode) return;
+  if (notify.classList.contains('peeking')) return;
+  notify.classList.remove('visible');
+  notify.classList.add('peeking');
+  // Let next notification show
+  if (notifyActive) {
+    notifyActive = false;
+    showNextNotify();
+  }
 }
 
 function dismissGameNotify(el) {
   const notify = el.closest ? el.closest('.game-notify') : el;
   if (!notify || !notify.parentNode || notify.classList.contains('dismissing')) return;
   notify.classList.add('dismissing');
-  notify.classList.remove('visible');
+  notify.classList.remove('visible', 'peeking');
   setTimeout(() => {
     if (notify.parentNode) notify.remove();
-    showNextNotify();
   }, 400);
 }
 
