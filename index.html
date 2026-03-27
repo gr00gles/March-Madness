@@ -3024,22 +3024,23 @@ function renderTracker(games) {
       const sliderStart = isWinnerBet ? 0 : (period === '2h' ? getFirstHalfScore(game) : 0);
 
       // Scale logos on winner bet cards only — based on adjusted spread diff, not raw score
-      let awayLogoStyle = '', homeLogoStyle = '';
+      // Scale logos on winner bet cards — use width/height so layout adjusts
+      const baseLogoSize = 36;
+      let awayLogoSize = baseLogoSize, homeLogoSize = baseLogoSize;
       if (isWinnerBet && game.state !== 'pre' && diff !== null) {
-        // diff > 0 = picked team covering, diff < 0 = not covering
         const wp = entry.winnerPick;
         const coverLead = Math.abs(diff);
-        const scale = 1 + Math.min(coverLead, 20) * 0.1;
+        const scaledSize = Math.round(baseLogoSize * (1 + Math.min(coverLead, 20) * 0.1));
         if (diff > 0) {
-          // Picked team is covering — grow their logo
-          if (wp.team === 'away') awayLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
-          else homeLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
+          if (wp.team === 'away') awayLogoSize = scaledSize;
+          else homeLogoSize = scaledSize;
         } else if (diff < 0) {
-          // Other team is winning against the spread — grow their logo
-          if (wp.team === 'away') homeLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
-          else awayLogoStyle = `style="transform:scale(${scale.toFixed(2)});transition:transform 0.5s ease;"`;
+          if (wp.team === 'away') homeLogoSize = scaledSize;
+          else awayLogoSize = scaledSize;
         }
       }
+      const awayLogoStyle = awayLogoSize !== baseLogoSize ? `style="width:${awayLogoSize}px;height:${awayLogoSize}px;transition:all 0.5s ease;"` : '';
+      const homeLogoStyle = homeLogoSize !== baseLogoSize ? `style="width:${homeLogoSize}px;height:${homeLogoSize}px;transition:all 0.5s ease;"` : '';
 
       html += `<div class="tracker-bar-row">
         <div class="tracker-team-side">
