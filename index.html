@@ -1540,7 +1540,7 @@ let firebaseListener = null;
 let isFirstLoad = true;
 let localChangeInProgress = false;
 let prevScores = {};
-let winTimestamps = {};
+let winTimestamps = JSON.parse(localStorage.getItem('mm_winTimestamps') || '{}');
 let gameDelays = {}; // Per-game delay in seconds { gameId: 45 }
 let gameDataHistory = {}; // { gameId: [{timestamp, data}, ...] } for delayed playback
 
@@ -2519,9 +2519,13 @@ function renderTracker(games) {
       prevSettled[settleKey] = true;
     }
   });
+
+  // Persist to localStorage so page reloads don't re-trigger celebrations
+  localStorage.setItem('mm_prevSettled', JSON.stringify(prevSettled));
+  localStorage.setItem('mm_winTimestamps', JSON.stringify(winTimestamps));
 }
 
-let prevSettled = {};
+let prevSettled = JSON.parse(localStorage.getItem('mm_prevSettled') || '{}');
 
 function spawnFireworks(container) {
   const colors = ['#22c55e', '#f97316', '#eab308', '#3b82f6', '#ef4444', '#a855f7', '#ec4899'];
