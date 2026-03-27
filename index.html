@@ -780,18 +780,30 @@ tr.locked-row .type-btn {
   bottom: 0;
   border-radius: 14px;
   transition: width 0.5s ease, background 0.5s ease;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 36px;
 }
 
 .spread-meter-diff {
-  font-size: 0.7rem;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
   font-weight: 800;
   color: var(--text);
-  padding: 0 8px;
-  white-space: nowrap;
+  z-index: 2;
+}
+
+.spread-meter-fill-bar.spread-pulse {
+  animation: spreadPulse var(--pulse-speed, 1.5s) ease-in-out infinite;
+}
+
+@keyframes spreadPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .spread-meter-labels {
@@ -2735,13 +2747,18 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   if (adjustedDiff > 0) fillColor = isWin ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.4)';
   else if (adjustedDiff < 0) fillColor = isLoss2 ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.4)';
 
+  // Pulse speed: closer to even = faster pulse (more tense), bigger lead = slower
+  // 0 pts diff = 0.3s (frantic), 15+ pts = 2.5s (calm), linear scale
+  const absCover = Math.abs(adjustedDiff);
+  const pulseSpeed = (0.3 + Math.min(absCover, 15) * (2.2 / 15)).toFixed(2);
+  const pulseClass = adjustedDiff !== 0 ? 'spread-pulse' : '';
+
   return `
     <div class="spread-meter">
       <div class="spread-meter-track">
         <div class="spread-meter-center"></div>
-        <div class="spread-meter-fill-bar" style="width:${pct}%;background:${fillColor};">
-          <span class="spread-meter-diff">${diffSign}${diffRound}</span>
-        </div>
+        <div class="spread-meter-fill-bar ${pulseClass}" style="width:${pct}%;background:${fillColor};--pulse-speed:${pulseSpeed}s;"></div>
+        <span class="spread-meter-diff">${diffSign}${diffRound}</span>
       </div>
     </div>`;
 }
