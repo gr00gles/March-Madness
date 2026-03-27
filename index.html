@@ -2812,7 +2812,7 @@ function renderSpreadMeter(game, wp, diff, isWin, isLoss2) {
   const minPct = 15;
   const clampedPct = Math.max(minPct, pct);
 
-  const shooterHtml = adjustedDiff <= -10 ? `
+  const shooterHtml = adjustedDiff <= -0.15 ? `
     <div class="spread-shooter">
       <span class="spread-shooter-guy">🤠</span>
       <span class="spread-shooter-gun">🔫</span>
