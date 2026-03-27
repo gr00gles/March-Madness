@@ -682,6 +682,24 @@ body {
   padding-top: 8px;
 }
 
+.tracker-chevron {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  padding: 2px 0 0;
+  line-height: 1;
+}
+
+.tracker-chevron-icon {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.tracker-chevron:hover .tracker-chevron-icon {
+  color: var(--accent);
+}
+
 /* Bet Tracker View */
 .tracker-layout {
   display: flex;
@@ -2227,7 +2245,7 @@ function renderTracker(games) {
     // Slider start: 1H=0, Full=0, 2H=first half score
     const sliderStart = period === '2h' ? getFirstHalfScore(game) : 0;
 
-    html += `<div class="tracker-bar-row" onclick="toggleTrackerInput('${game.id}', this, event)" style="cursor:pointer;">
+    html += `<div class="tracker-bar-row">
       <div class="tracker-team-side">
         ${game.away.logo ? `<img src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
         <span class="t-name">${game.away.abbreviation || game.away.name}</span>
@@ -2249,6 +2267,10 @@ function renderTracker(games) {
 
     html += `<div class="tracker-ou-section" id="tracker-ou-${game.id}-${period}" style="display:none;">
       ${renderOUTable(game)}
+    </div>`;
+
+    html += `<div class="tracker-chevron" onclick="toggleTrackerInput(this)">
+      <span class="tracker-chevron-icon">▼</span>
     </div>`;
 
     html += `</div>`;
@@ -2538,16 +2560,13 @@ function onSideChange(btn) {
   }
 }
 
-function toggleTrackerInput(gameId, clickedRow, event) {
-  // Don't toggle if clicking inside the delay controls
-  if (event && event.target.closest('.delay-control')) return;
-  const card = clickedRow.closest('.tracker-card');
+function toggleTrackerInput(chevron) {
+  const card = chevron.closest('.tracker-card');
   const section = card.querySelector('.tracker-ou-section');
   if (!section) return;
   const isOpen = section.style.display !== 'none';
-  // Close all other open tracker ou-sections
-  document.querySelectorAll('.tracker-ou-section').forEach(s => s.style.display = 'none');
-  if (!isOpen) section.style.display = 'block';
+  section.style.display = isOpen ? 'none' : 'block';
+  chevron.querySelector('.tracker-chevron-icon').textContent = isOpen ? '▼' : '▲';
 }
 
 function adjustDelay(gameId, delta) {
