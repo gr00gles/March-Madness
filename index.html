@@ -2206,7 +2206,11 @@ function renderTracker(games) {
       <div class="tracker-status-left">
         ${genderBadge}
         <span class="tracker-period-label">${periodLabel}</span>
-        <span class="tracker-status ${statusClass}">${isLive ? '● ' : ''}${game.statusText}</span>
+        <span class="tracker-status ${statusClass}">${(() => {
+          if (isFinal && complete) return '';
+          if (isLive && complete && period === '1h' && game.statusText.startsWith('1H')) return '';
+          return (isLive ? '● ' : '') + game.statusText;
+        })()}</span>
         ${dateLabel}
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
