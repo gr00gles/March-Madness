@@ -1526,11 +1526,11 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 // --- State ---
-let currentTab = 'input';
-let currentGender = 'mens';
-let currentDateMode = 'single';
-let currentDate = new Date();
-let endDate = new Date();
+let currentTab = localStorage.getItem('mm_tab') || 'input';
+let currentGender = localStorage.getItem('mm_gender') || 'mens';
+let currentDateMode = localStorage.getItem('mm_dateMode') || 'single';
+let currentDate = localStorage.getItem('mm_date') ? new Date(localStorage.getItem('mm_date')) : new Date();
+let endDate = localStorage.getItem('mm_endDate') ? new Date(localStorage.getItem('mm_endDate')) : new Date();
 let gamesData = {};
 let allExpanded = false;
 let allGamesCache = {};
@@ -1566,12 +1566,20 @@ auth.onAuthStateChanged((user) => {
     // Start listening to Firebase for this user's picks
     setupFirebaseListener();
 
-    // Init the app
+    // Init the app — restore saved state
     document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
-    const defaultEnd = new Date(currentDate);
-    defaultEnd.setDate(defaultEnd.getDate() + 1);
-    document.getElementById('endDateInput').value = defaultEnd.toISOString().split('T')[0];
-    endDate = defaultEnd;
+    document.getElementById('endDateInput').value = endDate.toISOString().split('T')[0];
+
+    // Restore active toggle buttons from saved state
+    document.querySelectorAll('#mainTabs .toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === currentTab);
+    });
+    document.querySelectorAll('#genderToggle .toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === currentGender);
+    });
+    document.querySelectorAll('#dateMode .toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === currentDateMode);
+    });
 
     // Migrate any local picks to Firebase
     migrateLocalPicks();
@@ -3049,6 +3057,7 @@ document.querySelectorAll('#mainTabs .toggle-btn').forEach(btn => {
     document.querySelectorAll('#mainTabs .toggle-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     currentTab = this.dataset.value;
+    localStorage.setItem('mm_tab', currentTab);
     isFirstLoad = true; loadCurrentView();
   });
 });
@@ -3058,6 +3067,7 @@ document.querySelectorAll('#genderToggle .toggle-btn').forEach(btn => {
     document.querySelectorAll('#genderToggle .toggle-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     currentGender = this.dataset.value;
+    localStorage.setItem('mm_gender', currentGender);
     isFirstLoad = true; loadCurrentView();
   });
 });
@@ -3067,23 +3077,27 @@ document.querySelectorAll('#dateMode .toggle-btn').forEach(btn => {
     document.querySelectorAll('#dateMode .toggle-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     currentDateMode = this.dataset.value;
+    localStorage.setItem('mm_dateMode', currentDateMode);
     isFirstLoad = true; loadCurrentView();
   });
 });
 
 document.getElementById('endDateInput').addEventListener('change', function() {
   endDate = new Date(this.value + 'T12:00:00');
+  localStorage.setItem('mm_endDate', endDate.toISOString());
   isFirstLoad = true; loadCurrentView();
 });
 
 document.getElementById('prevDay').addEventListener('click', () => {
   currentDate.setDate(currentDate.getDate() - 1);
+  localStorage.setItem('mm_date', currentDate.toISOString());
   document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
   isFirstLoad = true; loadCurrentView();
 });
 
 document.getElementById('nextDay').addEventListener('click', () => {
   currentDate.setDate(currentDate.getDate() + 1);
+  localStorage.setItem('mm_date', currentDate.toISOString());
   document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
   isFirstLoad = true; loadCurrentView();
 });
