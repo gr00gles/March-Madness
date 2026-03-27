@@ -2958,7 +2958,7 @@ function renderTracker(games) {
     const absDiff = Math.abs(actual - lineNum);
     const isNervous = !isWinnerBet && inProgress && !complete && !isWin && !isLoss2 && absDiff <= 8;
     const isVeryNervous = isNervous && absDiff <= 4;
-    const isPanic = isNervous && absDiff <= 1;
+    const isPanic = isNervous && absDiff <= 2;
 
     const cardClasses = [
       'tracker-card',
