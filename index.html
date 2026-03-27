@@ -2816,8 +2816,9 @@ function renderTracker(games) {
 
     let isWin, isLoss2;
     if (isWinnerBet) {
-      isWin = result === 'win' || result === 'pacing-win';
-      isLoss2 = result === 'loss' || result === 'pacing-loss';
+      // Winner bets only settle on final — score can swing during live play
+      isWin = result === 'win';
+      isLoss2 = result === 'loss';
     } else {
       const isSettledWin = result && !result.startsWith('pacing-') && result !== 'pending' && result !== 'push' && side === result;
       const isPacingWin = side === 'over' && result === 'pacing-over';
