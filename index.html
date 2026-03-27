@@ -792,10 +792,34 @@ body {
   gap: 10px;
 }
 
+.settled-period-vert {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.settled-team-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
 .settled-logo {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
+}
+
+.settled-abbr {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
 }
 
 .settled-score {
@@ -2523,10 +2547,19 @@ function renderTracker(games) {
       const resultClass = isWin ? 'over' : isLoss2 ? 'under' : 'push';
       const resultLabel = isWin ? 'WIN' : isLoss2 ? 'LOSS' : 'PUSH';
 
+      const settledPeriodHtml = period === '1h' ? '1ST<br>HALF' : period === '2h' ? '2ND<br>HALF' : 'FULL<br>GAME';
+
       html += `<div class="settled-compact">
-        ${game.away.logo ? `<img class="settled-logo" src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+        <div class="settled-period-vert">${settledPeriodHtml}</div>
+        <div class="settled-team-col">
+          ${game.away.logo ? `<img class="settled-logo" src="${game.away.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="settled-abbr">${game.away.abbreviation || game.away.name.slice(0,3).toUpperCase()}</span>
+        </div>
         <span class="tracker-bet-tag ${sideClass}${isWin ? ' won' : ''}${isLoss2 ? ' lost' : ''}">${sideLabel} ${line}</span>
-        ${game.home.logo ? `<img class="settled-logo" src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+        <div class="settled-team-col">
+          ${game.home.logo ? `<img class="settled-logo" src="${game.home.logo}" alt="" onerror="this.style.display='none'">` : ''}
+          <span class="settled-abbr">${game.home.abbreviation || game.home.name.slice(0,3).toUpperCase()}</span>
+        </div>
         <span class="settled-score">${actual}</span>
         <span class="diff-value ${resultClass}">${diffSign}${diffRounded}</span>
         <span class="tracker-token ${isWin ? 'win' : isLoss2 ? 'loss' : 'push'}">${resultLabel}</span>
